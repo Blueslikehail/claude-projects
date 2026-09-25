@@ -1,0 +1,11 @@
+{
+  "name": "hello-node",
+  "version": "0.1.0",
+  "description": "Minimal Node.js experiment — a starting point to copy from.",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "node --test"
+  }
+}

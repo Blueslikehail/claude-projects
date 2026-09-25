@@ -1,0 +1,10 @@
+[project]
+name = "hello-python"
+version = "0.1.0"
+description = "Minimal Python experiment — a starting point to copy from."
+requires-python = ">=3.10"
+dependencies = []
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]

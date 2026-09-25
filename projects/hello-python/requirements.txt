@@ -1,0 +1,2 @@
+# Runtime/dev dependencies for this project, installed by scripts/session-start.sh.
+pytest
