@@ -11,3 +11,5 @@ export * from "./audio/transcribe.js";
 export * from "./audio/synth.js";
 export * from "./audio/wav.js";
 export * from "./player.js";
+export * from "./live.js";
+export * from "./score.js";

@@ -17,6 +17,7 @@
           <input id="file" type="file" accept="audio/*,video/*" hidden />
         </label>
         <button id="demo" class="button">Try a demo riff</button>
+        <button id="live" class="button" title="Show the tab of what you play (M)">🎤 Live tab</button>
       </div>
     </header>
 
@@ -24,6 +25,7 @@
       <section id="empty" class="empty">
         <p><strong>Drop an audio or video file of a harmonica solo here</strong>, or open one above.</p>
         <p class="muted">Everything runs in your browser — nothing is uploaded.</p>
+        <p class="muted">Or just play: <strong>🎤 Live tab</strong> shows the holes you play as you play them.</p>
       </section>
 
       <section id="player" class="player" hidden>
@@ -78,6 +80,46 @@
           <label class="range">Zoom <input id="zoom" type="range" min="40" max="400" step="10" value="140" /></label>
         </div>
 
+        <section class="practice-card" aria-label="Practice with the microphone">
+          <div class="card-head">
+            <h2>Practice with the mic</h2>
+            <button id="mic" class="button primary" title="Start / stop the microphone (M)">🎤 Start mic</button>
+          </div>
+          <div id="practice-body" hidden>
+            <div class="practice-grid">
+              <div class="live" aria-live="off">
+                <div id="live-token" class="live-token">–</div>
+                <div id="live-note" class="muted"></div>
+                <div class="meter" title="Intonation: centre = in tune; one side = 50 cents"><i id="live-cents" hidden></i></div>
+                <div class="level" title="Mic level"><i id="live-level"></i></div>
+                <div id="live-next" class="live-next" hidden></div>
+              </div>
+              <div class="practice-side">
+                <div class="practice-controls">
+                  <div class="segmented needs-media" role="group" aria-label="Practice mode">
+                    <button id="mode-free" class="seg on">Free play</button>
+                    <button id="mode-along" class="seg">Play along</button>
+                  </div>
+                  <span id="along-controls" class="practice-controls" hidden>
+                  <label class="range" title="How late the mic hears you; raise it if hits show as late">Mic delay <input id="latency" type="range" min="0" max="600" step="10" /> <output id="latency-out"></output></label>
+                  <label class="range">Backing <input id="backing" type="range" min="0" max="1" step="0.05" value="1" /></label>
+                  </span>
+                </div>
+                <div id="free-box">
+                  <div id="free-out" class="tab free-out"></div>
+                  <div class="row-actions"><button id="free-clear" class="button small">Clear</button></div>
+                </div>
+                <div id="along-out" hidden>
+                  <div id="pass-score" class="pass-score">Press play and play along with the tab…</div>
+                  <ol id="pass-history" class="pass-history"></ol>
+                  <button id="calibrate" class="button small" disabled title="Measure your timing in the last pass and set the mic delay from it">Match my timing</button>
+                </div>
+              </div>
+            </div>
+            <p class="muted small">Use headphones, so the mic hears only you. Notes you hit turn green on the roll, wrong notes amber, missed notes red.</p>
+          </div>
+        </section>
+
         <div class="lower">
           <section class="tab-card">
             <div class="card-head">
@@ -95,7 +137,7 @@
 
     <footer class="bar status">
       <span id="status" role="status"></span>
-      <span class="muted keys">space play · [ ] loop · \ clear · ← → 2 s · , . notes</span>
+      <span class="muted keys">space play · [ ] loop · \ clear · ← → 2 s · , . notes · m mic</span>
     </footer>
 
     <script type="module" src="./app.js"></script>

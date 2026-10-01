@@ -19,6 +19,7 @@ import {
   renderNotes,
   suggestHarps,
 } from "./core/index.js";
+import { createPractice } from "./practice.js";
 
 const ANALYSIS_RATE = 22050;
 const $ = (id) => document.getElementById(id);
@@ -64,6 +65,12 @@ function status(html) {
   $("status").innerHTML = html;
 }
 
+function showPlayer() {
+  $("empty").hidden = true;
+  $("player").hidden = false;
+  $("player").classList.toggle("no-media", !state.originalUrl);
+}
+
 // ---------- loading & analysis ----------
 
 async function decodeToMono(arrayBuffer) {
@@ -86,8 +93,7 @@ async function loadFile(file) {
   dropSynth();
   media.pause();
   setSource("original", { keepTime: false });
-  $("empty").hidden = true;
-  $("player").hidden = false;
+  showPlayer();
   resetEdits();
   state.notes = [];
   remap();
@@ -162,6 +168,7 @@ function remap() {
   renderRoll();
   renderTab();
   renderNotePanel();
+  practice.harpChanged();
 }
 
 function updatePosition() {
@@ -220,6 +227,7 @@ function renderRoll() {
   const end = Math.max(media.duration || 0, ...state.events.map((e) => e.time + e.duration));
   track.style.width = `${end * px() + 400}px`;
   renderLoopZone();
+  practice.rollChanged();
 }
 
 function renderLoopZone() {
@@ -412,6 +420,7 @@ function stepNote(dir) {
 
 function tick() {
   const t = media.currentTime;
+  practice.tick(t);
   if (state.loop && !media.paused && (t >= state.loop.b || t < state.loop.a - 0.5)) {
     media.currentTime = state.loop.a;
   }
@@ -559,9 +568,10 @@ document.addEventListener("keydown", (ev) => {
     ArrowRight: () => (media.currentTime += 2),
     ",": () => stepNote(-1),
     ".": () => stepNote(1),
+    m: () => practice.toggle(),
   };
   const action = actions[ev.key];
-  if (action && state.events.length + state.notes.length > 0) {
+  if (action && (ev.key === "m" || state.events.length + state.notes.length > 0)) {
     ev.preventDefault();
     action();
   }
@@ -586,5 +596,22 @@ function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 }
 
+$("live").addEventListener("click", () => {
+  showPlayer();
+  practice.start();
+});
+
+const practice = createPractice({
+  media,
+  harp: () => state.harp,
+  events: () => state.events,
+  noteEls: () => noteEls,
+  track: $("track"),
+  px,
+  rowOf,
+  status,
+});
+
 fillSelects();
+remap();
 requestAnimationFrame(tick);

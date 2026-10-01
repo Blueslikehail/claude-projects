@@ -45,8 +45,22 @@ dependencies, so the same code will run in the web app:
   (±1, ±octave) or delete it; the tab re-maps.
 - **Hear the tab:** switch the sound from the recording to the synthesized tab.
 - Copy the tab as text.
+- Keys: space play · `[` `]` loop · `\` clear · ← → 2 s · `,` `.` notes · `m` mic.
 
-Roadmap: 4 live mic + play-along ·
+**Phase 4 — microphone (done).** `src/core/live.js`, `src/core/score.js`, `web/practice.js`:
+
+- **🎤 Live tab:** play and see the hole you're playing, big, with an intonation meter
+  (great for practising bends) and a running line of tab. Works with no recording loaded.
+- **Play along:** press play and play with the recording or the tab synth. Notes you hit
+  turn green on the roll, wrong notes amber, misses red; each pass (and each loop round)
+  is scored, with your average timing. The next note to play is shown.
+- **Mic delay** compensates for audio latency; **Match my timing** measures it from your
+  last pass (works even when nothing was close enough to count as a hit). Backing volume
+  lets you turn the recording down.
+- Mic audio goes through an `AudioWorklet` into a streaming YIN tracker and a live note
+  tracker (note on/off, re-attacks, legato); about 4% of one CPU core.
+
+Roadmap: ·
 5 chord detection / polyphonic (basic-pitch) · 6 guitar · 7 instrument separation.
 Every stage is a swappable module, so separation or URL import can later run on a server.
 
@@ -155,3 +169,12 @@ npm test
   now favour common positions when the song key is known.
   Not yet checked in Safari/Firefox; "Hear the tab" swaps the media source, so a video
   goes blank while it plays.
+- **Phase 4:** the offline segmentation logic carried over to a streaming tracker with
+  ~50 ms note-on latency; tests stream synthesized riffs in 37/128/1000-sample chunks and
+  get identical notes. End-to-end checked in Chromium with a fake microphone fed from a
+  WAV: live tab matched the riff exactly; with the "player" 0.45 s late, pass 1 scored
+  0/13, **Match my timing** set the delay to ~310 ms, and pass 2 scored 13/13. The first
+  calibration only averaged hits, which fails precisely when timing is way off — replaced
+  by a median offset to the nearest same-pitch note. Mic processing (echo cancellation,
+  noise suppression, auto gain) is turned off because it distorts pitch and dynamics, so
+  headphones are needed for play-along. Not tried yet with a real mic and harp.
