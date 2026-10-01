@@ -20,7 +20,18 @@ dependencies, so the same code will run in the web app:
 | `harpMapper.js` | Notes/chords → easiest hole sequence (Viterbi over difficulty + movement); harp-key suggestions |
 | `tab.js` | Format tab text, parse typed tab back into notes |
 
-Roadmap: 2 single-note transcription (YIN) · 3 web player · 4 live mic + play-along ·
+**Phase 2 — single-note transcription (done).** `src/core/audio/`, also browser-safe:
+
+| Module | What it does |
+| --- | --- |
+| `yin.js` | YIN pitch estimate for one frame (fast enough for live use) |
+| `pitchTrack.js` | Pitch + volume every 5 ms; decimates 44.1/48 kHz input to ~22 kHz first |
+| `segment.js` | Pitch track → notes: new attacks, legato, and glides (bends/slides); tuning offset |
+| `transcribe.js` | `transcribe(samples, sampleRate)` = the two above |
+| `synth.js` | Renders notes to audio (tests, and "hear this tab" in the app) |
+| `wav.js` | WAV decode/encode (the web app will use `decodeAudioData` for other formats) |
+
+Roadmap: 3 web player · 4 live mic + play-along ·
 5 chord detection / polyphonic (basic-pitch) · 6 guitar · 7 instrument separation.
 Every stage is a swappable module, so separation or URL import can later run on a server.
 
@@ -36,6 +47,7 @@ One arrow = one semitone.
 | overblow / overdraw | `6↑` / `-7↑` |
 | chord | `(4 5 6)`, `-(1 2 3)` |
 | tongue-blocked split | `(1 _ _ 4)` |
+| slide into a bend, same breath | `-3~-3↓↓` |
 
 When typing tab, `'` is accepted for `↓` (`-3''` = `-3↓↓`). Notes no harp can play
 show as `?Eb5`.
@@ -52,7 +64,13 @@ npm start -- suggest --octaves E2 G2 A2 B2        # try octave shifts (guitar ri
 npm start -- chord E7                             # which harps have an E7, and where
 npm start -- name G3 B3 D4 F4                     # -> G7
 npm start -- parse --harp C "-3'' 6↑ -(1 2 3)"    # tab -> notes
+npm start -- render --harp A --bpm 120 "-2 -3↓ 4 -3~-3↓↓" riff.wav   # tab -> audio
+npm start -- transcribe riff.wav --song E         # audio -> tab, picks the harp
+npm start -- transcribe solo.wav --harp A --notes # one line per note with its time
 ```
+
+`transcribe` reads WAV files (any sample rate, mono or stereo). Convert other formats
+with e.g. `ffmpeg -i solo.mp3 solo.wav`.
 
 ## Test
 
@@ -74,3 +92,11 @@ npm test
   a full G7 is `-(2 3 4 5)`.
 - Overbends are limited to the commonly played set (overblow 1, 4, 5, 6; overdraw 7, 9, 10)
   and cost more in the mapper, so they only appear when nothing else works.
+- **Phase 2:** YIN + a segmentation pass. Tested against synthesized reeds (harmonics,
+  noise, vibrato, detuning to A=446, a low G harp, overblows), all round-trip back to
+  the same tab. Pitched notes were easy; *where notes start* was the hard part: a new
+  attack is a volume dip, a hole change without one is legato, and a gradual pitch move
+  is a glide. A bend from -3 to -3↓↓ passes through -3↓; short stops inside a one-way
+  slide are dropped so it reads `-3~-3↓↓`. Speed: ~14x real time at 44.1 kHz after
+  decimating to 22 kHz (before: 3.5x). Not tested yet on real recordings, and chords
+  need the polyphonic stage (phase 5): a chord in a monophonic pass is lost or guessed.

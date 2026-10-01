@@ -1,6 +1,22 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { run, USAGE } from "../src/cli.js";
+
+test("render then transcribe gives the tab back and finds the harp", () => {
+  const dir = mkdtempSync(join(tmpdir(), "harp-"));
+  try {
+    const wav = join(dir, "riff.wav");
+    const tab = "-4 -4↓ 4 -3~-3↓ 3 -3↓ 4";
+    assert.match(run(["render", "--harp", "A", "--bpm", "160", tab, wav]), /Wrote .* \(8 notes/);
+    assert.equal(run(["transcribe", wav, "--song", "E"]), `Harp: A (position 2)\n${tab}`);
+    assert.match(run(["transcribe", wav, "--harp", "A", "--notes"]), /0\.\d\ds +B4 +-4\n/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
 
 test("no command prints usage", () => {
   assert.equal(run([]), USAGE);

@@ -20,6 +20,7 @@ export function candidates(harp, rawPitches) {
     return actionsForMidi(harp, pitches[0]).map((a) => ({
       token: a.token,
       actions: [a],
+      breath: a.breath,
       cost: a.cost,
       center: a.hole,
     }));
@@ -40,10 +41,12 @@ function unplayableToken(pitches) {
 
 /**
  * Map events onto a harp, minimising total cost = action difficulty + movement.
+ * A glide (event.glide: the pitch slid there, e.g. a bend) must stay on the same hole
+ * and breath, so changing either costs `glidePenalty`.
  * Unplayable events get a "?Note" token and break the path into independent runs.
  * @returns {{ events: object[], cost: number, unplayable: number }}
  */
-export function mapToHarp(events, harp, { moveWeight = 0.25 } = {}) {
+export function mapToHarp(events, harp, { moveWeight = 0.25, glidePenalty = 5 } = {}) {
   const out = new Array(events.length);
   let cost = 0;
   let unplayable = 0;
@@ -83,7 +86,11 @@ export function mapToHarp(events, harp, { moveWeight = 0.25 } = {}) {
       let min = Infinity;
       let arg = -1;
       prev.cands.forEach((p, k) => {
-        const total = prev.best[k] + moveWeight * Math.abs(c.center - p.center);
+        const slideBroken = event.glide && (p.center !== c.center || p.breath !== c.breath);
+        const total =
+          prev.best[k] +
+          moveWeight * Math.abs(c.center - p.center) +
+          (slideBroken ? glidePenalty : 0);
         if (total < min) [min, arg] = [total, k];
       });
       best.push(min + c.cost);

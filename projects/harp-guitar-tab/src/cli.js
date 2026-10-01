@@ -1,8 +1,11 @@
 // Command-line front end to the core library, for trying things before the web app exists.
+import { readFileSync, writeFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 import {
   chordShapesForChord,
   createHarp,
+  decodeWav,
+  encodeWav,
   formatHarpTab,
   harpKeyName,
   HARP_KEYS,
@@ -14,7 +17,9 @@ import {
   parseNote,
   pitchClassName,
   positionOf,
+  renderNotes,
   suggestHarps,
+  transcribe,
 } from "./core/index.js";
 
 export const USAGE = `harp-guitar-tab — harmonica tab tools
@@ -25,16 +30,21 @@ export const USAGE = `harp-guitar-tab — harmonica tab tools
   chord    <name> [--harp C]             where a chord lives on a harp (or which harps have it)
   name     <notes...>                    name the chord these notes make
   parse    [--harp C] "<tab>"            tab -> notes
+  transcribe <file.wav> [--harp A | --song E] [--notes]   recording -> tab
+  render   [--harp C] [--bpm 100] "<tab>" <out.wav>       tab -> audio
 
-Tab: 4 blow, -4 draw, -3↓ bend (one arrow = one semitone), 6↑ overblow, -(1 2 3) chord.
+Tab: 4 blow, -4 draw, -3↓ bend (one arrow = one semitone), 6↑ overblow, -(1 2 3) chord,
+     -3~-3↓↓ slide into a bend on the same hole.
 Example: npm start -- tab --harp A E4 G4 A4 Bb4 B4 D5 E5`;
+
+const BOOLEAN_FLAGS = ["--octaves", "--notes"];
 
 function parseArgs(argv) {
   const opts = {};
   const rest = [];
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
-    if (arg === "--octaves") opts.octaves = true;
+    if (BOOLEAN_FLAGS.includes(arg)) opts[arg.slice(2)] = true;
     else if (arg.startsWith("--")) opts[arg.slice(2)] = argv[++i];
     else rest.push(arg);
   }
@@ -122,6 +132,45 @@ export function run(argv) {
       return parseHarpTab(rest.join(" "), harp)
         .map((e) => `${e.token.padEnd(12)} ${e.pitches.map(noteName).join(" ")}`)
         .join("\n");
+
+    case "transcribe": {
+      const { sampleRate, samples } = decodeWav(readFileSync(rest[0]));
+      const { notes, tuningCents } = transcribe(samples, sampleRate);
+      if (notes.length === 0) return "No notes found.";
+      const lines = [];
+      let target = harp;
+      if (!opts.harp) {
+        const songKey = opts.song && harpKeyName(opts.song);
+        const [best] = suggestHarps(notes, { songKey });
+        target = createHarp(best.key);
+        lines.push(`Harp: ${best.key}${best.position ? ` (position ${best.position})` : ""}`);
+      }
+      if (Math.abs(tuningCents) >= 10) lines.push(`Recording is ${tuningCents} cents off A440.`);
+      const mapped = mapToHarp(notes, target).events;
+      if (opts.notes) {
+        for (const e of mapped) {
+          lines.push(`${e.time.toFixed(2).padStart(7)}s  ${noteName(e.pitches[0]).padEnd(4)} ${e.token}`);
+        }
+      } else {
+        lines.push(formatHarpTab(mapped));
+      }
+      return lines.join("\n");
+    }
+
+    case "render": {
+      const [tab, out] = rest;
+      if (!out) throw new Error("usage: render [--harp C] [--bpm 100] \"<tab>\" <out.wav>");
+      const beat = 60 / Number(opts.bpm ?? 100);
+      const sampleRate = 22050;
+      let time = 0;
+      const notes = parseHarpTab(tab, harp).map((e) => {
+        const note = { ...e, time, duration: beat };
+        time += beat;
+        return note;
+      });
+      writeFileSync(out, encodeWav(renderNotes(notes, { sampleRate }), sampleRate));
+      return `Wrote ${out} (${notes.length} notes, ${time.toFixed(1)}s)`;
+    }
 
     default:
       return USAGE;
