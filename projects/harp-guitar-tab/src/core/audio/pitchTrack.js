@@ -20,6 +20,7 @@ export function trackPitch(
     threshold = 0.15,
     a4 = 440,
     analysisRate = 22050, // pitch needs no more; 44.1/48 kHz input is decimated first (~4x faster)
+    onProgress, // optional (fraction 0..1) => void, called every ~1000 frames
   } = {},
 ) {
   const input = samples instanceof Float32Array ? samples : Float32Array.from(samples);
@@ -30,6 +31,7 @@ export function trackPitch(
   const hop = Math.max(1, Math.round(sampleRate * hopTime));
   const frames = [];
   for (let start = 0; start + frameSize <= data.length; start += hop) {
+    if (onProgress && frames.length % 1000 === 0) onProgress(start / data.length);
     const frame = data.subarray(start, start + frameSize);
     let energy = 0;
     for (let i = 0; i < frame.length; i++) energy += frame[i] * frame[i];

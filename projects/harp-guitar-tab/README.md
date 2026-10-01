@@ -31,7 +31,22 @@ dependencies, so the same code will run in the web app:
 | `synth.js` | Renders notes to audio (tests, and "hear this tab" in the app) |
 | `wav.js` | WAV decode/encode (the web app will use `decodeAudioData` for other formats) |
 
-Roadmap: 3 web player · 4 live mic + play-along ·
+**Phase 3 — web player (done).** `web/` — a static site, no build tools, no server:
+
+- Open or drop an audio/video file; it's decoded and resampled in the browser
+  (`OfflineAudioContext`) and transcribed in a Web Worker with a progress bar.
+- **Hole roll:** one row per hole, notes coloured blow / draw / bend / overbend / chord,
+  scrolling past a playhead in sync with playback. Click to jump.
+- **Tab text** by phrase, current note highlighted; ⟲ loops a phrase.
+- Harp **Auto** (best key for the notes, favouring common positions when the song key
+  is set) or any key; shows the position and the cross harp for the song key.
+- Speed 25–100% without changing pitch, A–B loop, note stepping, keyboard shortcuts.
+- **Edit the tab:** select a note to play it another way (`-2` ↔ `3`), fix its pitch
+  (±1, ±octave) or delete it; the tab re-maps.
+- **Hear the tab:** switch the sound from the recording to the synthesized tab.
+- Copy the tab as text.
+
+Roadmap: 4 live mic + play-along ·
 5 chord detection / polyphonic (basic-pitch) · 6 guitar · 7 instrument separation.
 Every stage is a swappable module, so separation or URL import can later run on a server.
 
@@ -54,10 +69,34 @@ show as `?Eb5`.
 
 ## Run
 
+### Web app
+
+```bash
+npm run dev          # http://localhost:8787 — serves web/ and src/core/ directly
+npm run build        # dist/ = web/ + src/core/ as dist/core/
+```
+
+Click **Try a demo riff** to see it work without a file.
+
+### Deploy to Cloudflare Pages
+
+Either from your machine (needs a Cloudflare login; `npx` fetches wrangler):
+
+```bash
+npm run deploy       # build + npx wrangler pages deploy dist --project-name harp-guitar-tab
+```
+
+or connect the GitHub repo in the Cloudflare dashboard (Workers & Pages → Create →
+Pages → Connect to Git) with **root directory** `projects/harp-guitar-tab`,
+**build command** `npm run build`, **output directory** `dist`. No environment
+variables or secrets are needed; the site is fully static.
+
+### Command line
+
 ```bash
 npm start                                         # help
 npm start -- layout --harp A                      # every note on an A harp
-npm start -- tab --harp A E4 G4 A4 Bb4 B4 D5 E5   # -> 3 -3↓ 4 -4↓ -4 -5 6
+npm start -- tab --harp A E4 G4 A4 Bb4 B4 D5 E5   # -> -2 -3↓ 4 -4↓ -4 -5 6
 npm start -- tab C4+E4+G4 C4+C5                   # chords: (1 2 3) (1 _ _ 4)
 npm start -- suggest --song E E4 G4 A4 Bb4 B4     # best harp keys + position
 npm start -- suggest --octaves E2 G2 A2 B2        # try octave shifts (guitar riffs)
@@ -100,3 +139,13 @@ npm test
   slide are dropped so it reads `-3~-3↓↓`. Speed: ~14x real time at 44.1 kHz after
   decimating to 22 kHz (before: 3.5x). Not tested yet on real recordings, and chords
   need the polyphonic stage (phase 5): a chord in a monophonic pass is lost or guessed.
+- **Phase 3:** plain ES modules, no bundler: `dist/` is just `web/` plus `src/core/`, so
+  the code the tests cover is exactly what ships. The browser decodes and resamples to
+  22 kHz mono itself, so any format it can play works (mp3, m4a, wav, mp4, webm), and
+  the worker keeps the page responsive. Checked end to end in headless Chromium
+  (demo → analysis → synced highlight → note edit → phrase loop → synth sound, phone
+  width, no console errors). Seeing `-2` written as `3` in the demo led to a small
+  default preference for `-2` (still `3` when it saves movement), and harp suggestions
+  now favour common positions when the song key is known.
+  Not yet checked in Safari/Firefox; "Hear the tab" swaps the media source, so a video
+  goes blank while it plays.

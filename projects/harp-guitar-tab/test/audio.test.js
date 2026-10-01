@@ -96,7 +96,7 @@ test("a detuned recording is corrected and reported", () => {
 
 test("noise and vibrato do not change the notes", () => {
   const a = createHarp("A");
-  const tab = "3 -3↓ 4 -4↓ -4 -5 6 -6 6";
+  const tab = "-2 -3↓ 4 -4↓ -4 -5 6 -6 6";
   assert.equal(tabOf(renderTab(tab, a, { noise: 0.05, vibrato: 0.25 }), a), tab);
 });
 
@@ -117,7 +117,7 @@ test("round trip: tab -> audio -> tab, including bends, overblows and a low harp
 
 test("44.1/48 kHz input is decimated for analysis with the same result", () => {
   const harp = createHarp("A");
-  const tab = "3 -3↓ 4 -4↓ -4 -5 6 6↑";
+  const tab = "-2 -3↓ 4 -4↓ -4 -5 6 6↑";
   const notes = parseHarpTab(tab, harp).map((e, i) => ({ ...e, time: 0.05 + i * 0.25, duration: 0.25 }));
   const samples = renderNotes(notes, { sampleRate: 48000 });
   const out = transcribe(samples, 48000);
@@ -126,7 +126,6 @@ test("44.1/48 kHz input is decimated for analysis with the same result", () => {
 });
 
 test("a glide keeps the mapper on the same hole and breath", () => {
-  // Without the glide, 3 and -2 tie for G4 here; sliding into -2↓ forces -2.
   const events = ["C5", "G4", "F#4", "C5"].map((n) => ({ pitches: [parseNote(n)] }));
   events[2].glide = true;
   const tokens = mapToHarp(events, createHarp("C")).events.map((e) => e.token);

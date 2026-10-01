@@ -38,8 +38,7 @@ test("impossible tokens are rejected", () => {
 test("tab round-trips through parse and map", () => {
   const tab = "-2 -3↓ 4 -4↓ -4 -5 6 -(1 2 3) (1 _ _ 4)";
   const mapped = mapToHarp(parseHarpTab(tab, C), C).events;
-  // -2 is re-mapped by context; everything else must come back unchanged.
-  assert.equal(formatHarpTab(mapped), "3 -3↓ 4 -4↓ -4 -5 6 -(1 2 3) (1 _ _ 4)");
+  assert.equal(formatHarpTab(mapped), tab);
 });
 
 test("formatHarpTab breaks lines at pauses and at maxPerLine", () => {

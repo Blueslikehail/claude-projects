@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Harp Tab Player</title>
+    <meta name="description" content="Load a blues harmonica solo and practice it with tab scrolling in sync. Runs in your browser; nothing is uploaded." />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='2' y='9' width='28' height='14' rx='3' fill='%23c2410c'/%3E%3Cg fill='%23fff'%3E%3Crect x='5' y='14' width='2' height='4'/%3E%3Crect x='9' y='14' width='2' height='4'/%3E%3Crect x='13' y='14' width='2' height='4'/%3E%3Crect x='17' y='14' width='2' height='4'/%3E%3Crect x='21' y='14' width='2' height='4'/%3E%3Crect x='25' y='14' width='2' height='4'/%3E%3C/g%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <header class="bar">
+      <h1>Harp Tab Player</h1>
+      <div class="actions">
+        <label class="button primary">
+          Open audio / video
+          <input id="file" type="file" accept="audio/*,video/*" hidden />
+        </label>
+        <button id="demo" class="button">Try a demo riff</button>
+      </div>
+    </header>
+
+    <main>
+      <section id="empty" class="empty">
+        <p><strong>Drop an audio or video file of a harmonica solo here</strong>, or open one above.</p>
+        <p class="muted">Everything runs in your browser — nothing is uploaded.</p>
+      </section>
+
+      <section id="player" class="player" hidden>
+        <div class="media-wrap">
+          <video id="media" controls playsinline preload="auto"></video>
+        </div>
+
+        <div class="settings">
+          <label>Harp
+            <select id="harp"></select>
+          </label>
+          <label>Song key
+            <select id="song"></select>
+          </label>
+          <span id="position" class="muted"></span>
+          <label class="check"><input id="overbends" type="checkbox" checked /> Overbends</label>
+          <div class="segmented" role="group" aria-label="Sound">
+            <button id="src-original" class="seg on" aria-pressed="true">Recording</button>
+            <button id="src-synth" class="seg" aria-pressed="false">Hear the tab</button>
+          </div>
+        </div>
+
+        <div class="roll-wrap">
+          <div class="holes" aria-hidden="true" id="holes"></div>
+          <div id="roll" class="roll" title="Click to jump; click a note to select it">
+            <div id="track" class="track"></div>
+            <div class="cursor"></div>
+          </div>
+        </div>
+
+        <div class="legend" aria-label="Colours">
+          <span><i class="note blow"></i>blow</span>
+          <span><i class="note draw"></i>draw</span>
+          <span><i class="note bend"></i>bend</span>
+          <span><i class="note over"></i>overbend</span>
+          <span><i class="note chord"></i>chord</span>
+          <span><i class="note bad"></i>not playable</span>
+          <span class="muted">· rows are holes · click to jump</span>
+        </div>
+
+        <div class="transport">
+          <button id="play" class="button primary" title="Play / pause (space)">Play</button>
+          <button id="prev" class="button" title="Previous note (,)">◀︎ Note</button>
+          <button id="next" class="button" title="Next note (.)">Note ▶︎</button>
+          <label class="range">Speed <input id="speed" type="range" min="0.25" max="1" step="0.05" value="1" /> <output id="speed-out">100%</output></label>
+          <span class="loop-controls">
+            <button id="loop-a" class="button" title="Loop start ([)">A</button>
+            <button id="loop-b" class="button" title="Loop end (])">B</button>
+            <button id="loop-clear" class="button" title="Clear loop (\)">No loop</button>
+            <span id="loop-out" class="muted"></span>
+          </span>
+          <label class="range">Zoom <input id="zoom" type="range" min="40" max="400" step="10" value="140" /></label>
+        </div>
+
+        <div class="lower">
+          <section class="tab-card">
+            <div class="card-head">
+              <h2>Tab</h2>
+              <button id="copy" class="button small">Copy tab</button>
+            </div>
+            <div id="tab" class="tab"></div>
+          </section>
+          <aside id="note-panel" class="note-card">
+            <p class="muted">Select a note to see it, change how it's played, fix its pitch or delete it.</p>
+          </aside>
+        </div>
+      </section>
+    </main>
+
+    <footer class="bar status">
+      <span id="status" role="status"></span>
+      <span class="muted keys">space play · [ ] loop · \ clear · ← → 2 s · , . notes</span>
+    </footer>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>

@@ -12,15 +12,17 @@ const tokens = (s, key = "C", opts) =>
 const E_BLUES = "E4 G4 A4 Bb4 B4 D5 E5";
 
 test("E blues scale on an A harp (2nd position)", () => {
-  assert.deepEqual(tokens(E_BLUES, "A"), ["3", "-3↓", "4", "-4↓", "-4", "-5", "6"]);
+  assert.deepEqual(tokens(E_BLUES, "A"), ["-2", "-3↓", "4", "-4↓", "-4", "-5", "6"]);
 });
 
 test("single notes map to their hole and breath", () => {
   assert.deepEqual(tokens("C4 D4 E4 B4 D5 F5"), ["1", "-1", "2", "-3", "-4", "-5"]);
 });
 
-test("movement cost picks -2 or 3 by context", () => {
-  assert.equal(tokens("D4 G4 F#4")[1], "-2"); // next to the -2↓ bend
+test("G is -2 by default, 3 when it saves real movement", () => {
+  assert.equal(tokens("G4")[0], "-2");
+  assert.equal(tokens("D4 G4 D4")[1], "-2"); // next to hole 1
+  assert.equal(tokens("B4 G4 B4")[1], "3"); // same hole as -3, just change breath
   assert.equal(tokens("C5 G4 C5")[1], "3"); // between 4 blows
 });
 

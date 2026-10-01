@@ -103,13 +103,18 @@ export function mapToHarp(events, harp, { moveWeight = 0.25, glidePenalty = 5 } 
   return { events: out, cost, unplayable };
 }
 
+// Extra cost per position when the song key is known: 2nd (cross harp) and 1st are the
+// blues staples, 3rd is common, 12th/4th/5th occasional, the rest rare.
+const POSITION_COST = { 1: 0, 2: 0, 3: 0.5, 12: 1, 4: 1.5, 5: 1.5 };
+const RARE_POSITION_COST = 3;
+
 const transpose = (events, shift) =>
   events.map((e) => ({ ...e, pitches: e.pitches.map((p) => p + shift) }));
 
 /**
  * Rank harp keys for a riff: fewest unplayable notes first, then easiest.
  * With `octaveShifts` it also tries moving the riff by octaves (e.g. a guitar line).
- * With `songKey` each result reports the position it is played in.
+ * With `songKey` each result reports its position, and common positions rank higher.
  */
 export function suggestHarps(
   events,
@@ -120,17 +125,19 @@ export function suggestHarps(
     const harp = createHarp(key, { overbends });
     for (const octaves of octaveShifts) {
       const mapped = mapToHarp(transpose(events, 12 * octaves), harp);
+      const position = songKey ? positionOf(key, songKey) : undefined;
       results.push({
         key,
         octaves,
-        position: songKey ? positionOf(key, songKey) : undefined,
+        position,
         unplayable: mapped.unplayable,
         cost: mapped.cost,
+        score: mapped.cost + (position ? (POSITION_COST[position] ?? RARE_POSITION_COST) : 0),
         tokens: mapped.events.map((e) => e.token),
       });
     }
   }
   return results
-    .sort((a, b) => a.unplayable - b.unplayable || a.cost - b.cost)
+    .sort((a, b) => a.unplayable - b.unplayable || a.score - b.score)
     .slice(0, limit);
 }

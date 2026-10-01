@@ -10,3 +10,4 @@ export * from "./audio/segment.js";
 export * from "./audio/transcribe.js";
 export * from "./audio/synth.js";
 export * from "./audio/wav.js";
+export * from "./player.js";

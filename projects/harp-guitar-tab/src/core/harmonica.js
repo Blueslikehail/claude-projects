@@ -34,6 +34,9 @@ export function harpKeyName(key) {
 /** How hard an action is; the mapper prefers cheap actions. */
 export function actionCost(action) {
   if (action.over) return 3;
+  // G on a C harp is both -2 and 3. Blues players reach for -2 (the home note in 2nd
+  // position), so 3 costs a little more; it still wins when it saves real movement.
+  if (action.hole === 3 && action.breath === "blow") return 0.3;
   return action.bend * 0.8;
 }
 

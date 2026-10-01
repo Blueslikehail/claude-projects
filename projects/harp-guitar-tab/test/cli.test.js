@@ -23,7 +23,7 @@ test("no command prints usage", () => {
 });
 
 test("tab command", () => {
-  assert.equal(run(["tab", "--harp", "A", "E4", "G4", "A4", "Bb4"]), "3 -3↓ 4 -4↓");
+  assert.equal(run(["tab", "--harp", "A", "E4", "G4", "A4", "Bb4"]), "-2 -3↓ 4 -4↓");
   assert.equal(run(["tab", "C4+E4+G4"]), "(1 2 3)");
 });
 
