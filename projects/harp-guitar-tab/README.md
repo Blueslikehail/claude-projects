@@ -78,18 +78,24 @@ npm run build        # dist/ = web/ + src/core/ as dist/core/
 
 Click **Try a demo riff** to see it work without a file.
 
-### Deploy to Cloudflare Pages
+### Deploy to Cloudflare
 
-Either from your machine (needs a Cloudflare login; `npx` fetches wrangler):
+The app is static files served by a Cloudflare Worker (`wrangler.jsonc` points at `dist/`;
+there is no server code).
 
-```bash
-npm run deploy       # build + npx wrangler pages deploy dist --project-name harp-guitar-tab
-```
+**From the dashboard** (Workers & Pages → Create → Import a repository), with
+**Advanced settings → Root directory** `projects/harp-guitar-tab`:
 
-or connect the GitHub repo in the Cloudflare dashboard (Workers & Pages → Create →
-Pages → Connect to Git) with **root directory** `projects/harp-guitar-tab`,
-**build command** `npm run build`, **output directory** `dist`. No environment
-variables or secrets are needed; the site is fully static.
+| Field | Value |
+| --- | --- |
+| Project name | `harp-guitar-tab` (must match `name` in `wrangler.jsonc`) |
+| Build command | `npm run build` |
+| Deploy command | `npx wrangler deploy` |
+
+Builds run from the repo's production branch (Settings → Build → Branch control).
+The site is then at `https://harp-guitar-tab.<your-subdomain>.workers.dev`.
+
+**From your machine:** `npm run deploy` (build + `npx wrangler deploy`; asks you to log in once).
 
 ### Command line
 
