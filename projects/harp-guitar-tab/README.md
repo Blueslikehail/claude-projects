@@ -1,0 +1,76 @@
+# harp-guitar-tab
+
+Learn blues harmonica and guitar solos: turn audio into playable tab in the browser.
+
+The goal is a web app (static site on Cloudflare Pages) where you load an audio or video
+file of a solo, and it plays back with harmonica or guitar tab scrolling in sync, with
+A–B looping, slow-down, and a live microphone mode for playing along. All analysis runs
+in the browser; your audio is never uploaded.
+
+## Status
+
+**Phase 1 — core library (done).** Pure JavaScript in `src/core/`, no Node or browser
+dependencies, so the same code will run in the web app:
+
+| Module | What it does |
+| --- | --- |
+| `pitch.js` | Note names ↔ MIDI ↔ frequency |
+| `harmonica.js` | Richter layout for any harp key (G–F#), bends, overbends, chord shapes, positions |
+| `chords.js` | Chord names ↔ notes, naming a set of sounding notes |
+| `harpMapper.js` | Notes/chords → easiest hole sequence (Viterbi over difficulty + movement); harp-key suggestions |
+| `tab.js` | Format tab text, parse typed tab back into notes |
+
+Roadmap: 2 single-note transcription (YIN) · 3 web player · 4 live mic + play-along ·
+5 chord detection / polyphonic (basic-pitch) · 6 guitar · 7 instrument separation.
+Every stage is a swappable module, so separation or URL import can later run on a server.
+
+## Harmonica tab notation
+
+One arrow = one semitone.
+
+| Meaning | Tab |
+| --- | --- |
+| blow / draw | `4` / `-4` |
+| draw bend 1, 2, 3 semitones | `-3↓` `-3↓↓` `-3↓↓↓` |
+| blow bend | `8↓`, `10↓↓` |
+| overblow / overdraw | `6↑` / `-7↑` |
+| chord | `(4 5 6)`, `-(1 2 3)` |
+| tongue-blocked split | `(1 _ _ 4)` |
+
+When typing tab, `'` is accepted for `↓` (`-3''` = `-3↓↓`). Notes no harp can play
+show as `?Eb5`.
+
+## Run
+
+```bash
+npm start                                         # help
+npm start -- layout --harp A                      # every note on an A harp
+npm start -- tab --harp A E4 G4 A4 Bb4 B4 D5 E5   # -> 3 -3↓ 4 -4↓ -4 -5 6
+npm start -- tab C4+E4+G4 C4+C5                   # chords: (1 2 3) (1 _ _ 4)
+npm start -- suggest --song E E4 G4 A4 Bb4 B4     # best harp keys + position
+npm start -- suggest --octaves E2 G2 A2 B2        # try octave shifts (guitar riffs)
+npm start -- chord E7                             # which harps have an E7, and where
+npm start -- name G3 B3 D4 F4                     # -> G7
+npm start -- parse --harp C "-3'' 6↑ -(1 2 3)"    # tab -> notes
+```
+
+## Test
+
+```bash
+npm test
+```
+
+## Notes
+
+- **Design choice:** everything client-side (Cloudflare Pages, no server compute). Workers
+  can't run audio ML; the browser can (Web Audio, AudioWorklet, TF.js basic-pitch). Weak
+  spots — instrument separation and importing from URLs — are planned as optional
+  server-side modules (GPU service or Cloudflare Containers) behind the same interfaces.
+- **Phase 1:** the harmonica model came out simple once bends are derived from the
+  reed pair in each hole (the higher reed bends down toward the lower one). The one real
+  ambiguity on a Richter harp is G (`-2` = `3` on a C harp); the mapper picks by context.
+- Chord voicings require root, 3rd and 7th (5th and 9th may be dropped). That makes
+  the classic "draw 1–4 = G7 on a C harp" read as G major — correct, the F is in draw 5;
+  a full G7 is `-(2 3 4 5)`.
+- Overbends are limited to the commonly played set (overblow 1, 4, 5, 6; overdraw 7, 9, 10)
+  and cost more in the mapper, so they only appear when nothing else works.

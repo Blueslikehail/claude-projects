@@ -1,0 +1,11 @@
+{
+  "name": "harp-guitar-tab",
+  "version": "0.1.0",
+  "description": "Learn blues harmonica and guitar solos: turn audio into playable tab in the browser.",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "start": "node src/cli.js",
+    "test": "node --test"
+  }
+}
