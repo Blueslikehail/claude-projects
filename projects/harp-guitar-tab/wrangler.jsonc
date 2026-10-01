@@ -1,0 +1,8 @@
+// Cloudflare Worker serving the static app (no server code): dist/ is built by `npm run build`.
+{
+  "name": "harp-guitar-tab",
+  "compatibility_date": "2026-09-01",
+  "assets": {
+    "directory": "./dist"
+  }
+}
