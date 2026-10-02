@@ -60,7 +60,17 @@ dependencies, so the same code will run in the web app:
 - Mic audio goes through an `AudioWorklet` into a streaming YIN tracker and a live note
   tracker (note on/off, re-attacks, legato); about 4% of one CPU core.
 
-Roadmap: ·
+**Phase 5 — chords (done).** `src/core/audio/fft.js`, `src/core/audio/poly.js`:
+
+- A second, polyphonic pass (FFT + iterative pitch estimation with smoothed harmonic
+  subtraction) finds where 2+ notes sound together; those chord segments replace the
+  single-note guesses they cover. Plain JS, ~30% extra analysis time.
+- Chords map to real harp shapes; if detection missed or added a note, the closest
+  shape is used and marked as approximate. Each chord is named (`-(1 2 3)` on an A harp
+  = E, `-(2 3 4 5)` = E7) on the roll, in the tab and in the note panel.
+- "Shift" in the note panel moves a whole chord.
+
+Roadmap: 6 guitar · 7 instrument separation.
 5 chord detection / polyphonic (basic-pitch) · 6 guitar · 7 instrument separation.
 Every stage is a swappable module, so separation or URL import can later run on a server.
 
@@ -178,3 +188,11 @@ npm test
   by a median offset to the nearest same-pitch note. Mic processing (echo cancellation,
   noise suppression, auto gain) is turned off because it distorts pitch and dynamics, so
   headphones are needed for play-along. Not tried yet with a real mic and harp.
+- **Phase 5:** the hard part is octaves: a note an octave up sits entirely on the lower
+  note's harmonics. Measured on 210 single notes in 5 tone colours (incl. one with the
+  2nd harmonic twice the fundamental): with the octave threshold at 0.55 a bright tone
+  produced 8 false chords; at 0.7, zero — at the price of sometimes missing an octave
+  doubling (`-(1 2 3 4)` heard as `-(1 2 3)`) and **tongue-blocked octave splits**
+  (`(1 _ _ 4)` comes out as `1`). False chords would be worse than missed octaves, so
+  0.7 it is. The live mic is still single-note; chords in play-along count as hit when
+  you play any of their notes.

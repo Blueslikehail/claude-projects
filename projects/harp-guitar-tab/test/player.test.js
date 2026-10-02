@@ -45,10 +45,10 @@ test("makeLoop orders, clamps and rejects tiny loops", () => {
   assert.equal(makeLoop(null, 3, 10), null);
 });
 
-test("note edits: delete and re-pitch by id", () => {
-  const notes = [{ id: 0, pitches: [60] }, { id: 1, pitches: [62] }, { id: 2, pitches: [64] }];
-  const out = applyNoteEdits(notes, { deleted: new Set([1]), pitchEdits: new Map([[2, 65]]) });
-  assert.deepEqual(out, [{ id: 0, pitches: [60] }, { id: 2, pitches: [65] }]);
+test("note edits: delete, and shift notes or whole chords by id", () => {
+  const notes = [{ id: 0, pitches: [60] }, { id: 1, pitches: [62] }, { id: 2, pitches: [64] }, { id: 3, pitches: [60, 64, 67] }];
+  const out = applyNoteEdits(notes, { deleted: new Set([1]), pitchEdits: new Map([[2, 1], [3, -12]]) });
+  assert.deepEqual(out, [{ id: 0, pitches: [60] }, { id: 2, pitches: [65] }, { id: 3, pitches: [48, 52, 55] }]);
 });
 
 test("token edits pick an alternative way to play a note", () => {

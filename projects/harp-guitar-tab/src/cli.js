@@ -149,7 +149,8 @@ export function run(argv) {
       const mapped = mapToHarp(notes, target).events;
       if (opts.notes) {
         for (const e of mapped) {
-          lines.push(`${e.time.toFixed(2).padStart(7)}s  ${noteName(e.pitches[0]).padEnd(4)} ${e.token}`);
+          const heard = e.pitches.map(noteName).join(" ");
+          lines.push(`${e.time.toFixed(2).padStart(7)}s  ${heard.padEnd(4)} ${e.token}${e.chord ? `  (${e.chord})` : ""}`);
         }
       } else {
         lines.push(formatHarpTab(mapped));

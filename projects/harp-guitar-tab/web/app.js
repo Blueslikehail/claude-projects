@@ -207,7 +207,13 @@ function renderRoll() {
     el.className = `note ${kind}${e.glide ? " glide" : ""}`;
     el.dataset.i = i;
     el.textContent = e.token;
-    el.title = `${e.pitches.map(noteName).join(" ")} · ${e.time.toFixed(2)} s`;
+    if (e.chord) {
+      const name = document.createElement("span");
+      name.className = "chord-name";
+      name.textContent = e.chord;
+      el.append(name);
+    }
+    el.title = `${e.chord ? `${e.chord} chord · ` : ""}${e.pitches.map(noteName).join(" ")} · ${e.time.toFixed(2)} s`;
     let top = 10;
     let rows = 1;
     if (e.holes) {
@@ -275,6 +281,12 @@ function renderTab() {
       if (e.id === state.selectedId) tok.classList.add("selected");
       tok.dataset.i = i;
       tok.textContent = e.token;
+      if (e.chord) {
+        const name = document.createElement("sup");
+        name.textContent = e.chord;
+        tok.append(name);
+        tok.title = `${e.chord} chord`;
+      }
       row.append(tok);
       tokEls[i] = tok;
     }
@@ -296,7 +308,9 @@ function renderNotePanel() {
   panel.innerHTML = `
     <h3>${escapeHtml(e.token)}</h3>
     <dl>
-      <dt>Note</dt><dd>${e.pitches.map(noteName).join(" ")}</dd>
+      ${e.chord ? `<dt>Chord</dt><dd>${escapeHtml(e.chord)}${e.midis ? ` · ${e.midis.map(noteName).join(" ")}` : ""}</dd>` : ""}
+      ${!e.midis || e.approx ? `<dt>${e.pitches.length > 1 ? "Heard" : "Note"}</dt><dd>${e.pitches.map(noteName).join(" ")}</dd>` : ""}
+      ${e.approx ? `<dt></dt><dd class="muted">No harp chord has exactly these notes; this is the closest.</dd>` : ""}
       <dt>Time</dt><dd>${e.time.toFixed(2)} s · ${Math.round(e.duration * 1000)} ms</dd>
       ${e.cents != null ? `<dt>Intonation</dt><dd>${e.cents > 0 ? "+" : ""}${e.cents} cents</dd>` : ""}
       ${e.glide ? `<dt>Played</dt><dd>slid into from the previous note</dd>` : ""}
@@ -304,7 +318,7 @@ function renderNotePanel() {
     ${alts.length > 1 ? `<div class="muted">Play it as</div><div class="row">${alts
       .map((a) => `<button class="button small ${a.token === e.token ? "on" : ""}" data-alt="${escapeHtml(a.token)}">${escapeHtml(a.token)}</button>`)
       .join("")}</div>` : ""}
-    <div class="muted">Wrong note?</div>
+    <div class="muted">${e.pitches.length > 1 ? "Shift the chord" : "Wrong note?"}</div>
     <div class="row">
       <button class="button small" data-shift="-12">−8va</button>
       <button class="button small" data-shift="-1">−1</button>
@@ -335,8 +349,7 @@ $("note-panel").addEventListener("click", (ev) => {
   if (btn.dataset.alt) {
     state.tokenEdits.set(id, btn.dataset.alt);
   } else if (btn.dataset.shift) {
-    const base = state.pitchEdits.get(id) ?? state.notes.find((n) => n.id === id).pitches[0];
-    state.pitchEdits.set(id, base + Number(btn.dataset.shift));
+    state.pitchEdits.set(id, (state.pitchEdits.get(id) ?? 0) + Number(btn.dataset.shift));
     state.tokenEdits.delete(id);
   } else if ("delete" in btn.dataset) {
     state.deleted.add(id);
@@ -464,14 +477,14 @@ $("demo").addEventListener("click", () => {
   const phrasesTab = [
     "-2 -3↓ -3 -4 -4↓ 4 -3~-3↓↓ -2",
     "-2 -2 -3↓ 4 -4↓ -4 -5 6",
-    "6 -5 -4 -4↓ 4 -3↓ -2",
+    "6 -5 -4 -4↓ 4 -3↓ -2 -(1 2 3)",
   ];
   const notes = [];
   let t = 0.3;
   for (const line of phrasesTab) {
     for (const e of parseHarpTab(line, harp)) {
       if (e.glide) notes.at(-1).duration = t - notes.at(-1).time; // hold into the slide
-      notes.push({ ...e, time: t, duration: e.glide ? 0.45 : 0.27 });
+      notes.push({ ...e, time: t, duration: e.glide ? 0.45 : e.pitches.length > 1 ? 0.8 : 0.27 });
       t += e.glide ? 0.5 : 0.3;
     }
     t += 0.9;

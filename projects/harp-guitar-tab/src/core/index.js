@@ -13,3 +13,5 @@ export * from "./audio/wav.js";
 export * from "./player.js";
 export * from "./live.js";
 export * from "./score.js";
+export * from "./audio/fft.js";
+export * from "./audio/poly.js";

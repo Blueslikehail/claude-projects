@@ -50,12 +50,15 @@ export function makeLoop(a, b, duration, { min = 0.2 } = {}) {
 
 /**
  * Apply the user's edits to transcribed notes before mapping:
- * `deleted` is a Set of note ids, `pitchEdits` maps id -> MIDI pitch.
+ * `deleted` is a Set of note ids, `pitchEdits` maps id -> semitone shift (whole chords move).
  */
 export function applyNoteEdits(notes, { deleted = new Set(), pitchEdits = new Map() } = {}) {
   return notes
     .filter((n) => !deleted.has(n.id))
-    .map((n) => (pitchEdits.has(n.id) ? { ...n, pitches: [pitchEdits.get(n.id)] } : n));
+    .map((n) => {
+      const shift = pitchEdits.get(n.id);
+      return shift ? { ...n, pitches: n.pitches.map((p) => p + shift) } : n;
+    });
 }
 
 /**
