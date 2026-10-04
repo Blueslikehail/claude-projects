@@ -31,6 +31,7 @@
       <div class="tools">
         <span class="step-count" id="step-count"></span>
         <div class="tool-group">
+          <button type="button" class="chip-btn" id="toggle-figure" aria-pressed="true">3D figure</button>
           <button type="button" class="chip-btn" id="toggle-apps" aria-pressed="true">Applications</button>
           <button type="button" class="chip-btn" id="toggle-wake" aria-pressed="false">Keep screen on</button>
           <label class="chip-btn timer" for="timer-select">
@@ -44,7 +45,20 @@
           </label>
         </div>
       </div>
-      <article class="posture" id="posture"></article>
+      <article class="posture" id="posture">
+        <div class="scroll" id="posture-scroll" lang="zh"></div>
+        <div class="body">
+          <div id="posture-head"></div>
+          <div class="split" id="posture-split">
+            <figure class="viewer-wrap" id="figure-wrap">
+              <div class="viewer" id="viewer"></div>
+              <figcaption class="viewer-bar" id="viewer-bar"></figcaption>
+            </figure>
+            <div class="posture-text" id="posture-text"></div>
+          </div>
+          <div id="posture-apps"></div>
+        </div>
+      </article>
     </div>
     <div class="step-nav">
       <button type="button" class="nav-btn" id="prev-step"><span aria-hidden="true">←</span> Previous</button>
@@ -100,9 +114,29 @@
     </div>
   </section>
 
+  <!-- Two-figure application viewer -->
+  <div class="sheet" id="app-sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title" hidden>
+    <div class="sheet-inner">
+      <header class="sheet-head">
+        <div>
+          <p class="kind" id="sheet-kind"></p>
+          <h2 id="sheet-title"></h2>
+        </div>
+        <button type="button" class="chip-btn" id="sheet-close">Close</button>
+      </header>
+      <div class="viewer tall" id="sheet-viewer"></div>
+      <div class="viewer-bar" id="sheet-bar"></div>
+      <div class="sheet-roles">
+        <p><span class="who attacker">Attacker</span> <span id="sheet-attacker"></span></p>
+        <p><span class="who defender">You</span> <span id="sheet-defender"></span></p>
+      </div>
+    </div>
+  </div>
+
   <footer class="foot">
     Draft content for study alongside a teacher, not instead of one. Sequences and applications vary by school; edit the data to match yours.
   </footer>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script type="module" src="app.js"></script>

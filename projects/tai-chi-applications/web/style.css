@@ -351,3 +351,100 @@ button { cursor: pointer; }
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; scroll-behavior: auto !important; }
 }
+
+/* ---------- 3D figure ---------- */
+:root { --viewer-bg: #e1e8e3; --viewer-ground: #c8d3cc; --figure: #7e968b; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --viewer-bg: #131b18; --viewer-ground: #1e2a26; --figure: #9db5aa; }
+}
+:root[data-theme="dark"] { --viewer-bg: #131b18; --viewer-ground: #1e2a26; --figure: #9db5aa; }
+
+.split { display: grid; gap: 1.25rem 2rem; }
+.split.with-figure { grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); align-items: start; margin-bottom: 1.5rem; }
+.viewer-wrap { margin: 0; min-width: 0; display: grid; gap: 0.5rem; }
+.viewer {
+  position: relative;
+  aspect-ratio: 4 / 5;
+  max-height: 62vh;
+  width: 100%;
+  max-width: 100%;
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--viewer-bg);
+  border: 1px solid var(--line);
+  cursor: grab;
+}
+.viewer.tall { aspect-ratio: 16 / 10; max-height: 58vh; }
+.viewer canvas { display: block; width: 100%; height: 100%; }
+.viewer.mirrored canvas { transform: scaleX(-1); }
+.viewer-missing { margin: 0; padding: 1.5rem; color: var(--muted); font-size: 0.95rem; }
+.viewer-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; font-size: 0.85rem; }
+.vb-btn, .vb-dot {
+  min-height: 2.5rem;
+  min-width: 2.5rem;
+  padding: 0 0.7rem;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  font-weight: 700;
+}
+.vb-btn[aria-pressed="true"] { background: var(--jade-soft); border-color: var(--jade); }
+.vb-play { background: var(--jade); color: var(--on-jade); border-color: var(--jade); min-width: 4.5rem; }
+.vb-group { display: inline-flex; gap: 2px; }
+.vb-group .vb-btn { border-radius: 0; }
+.vb-group .vb-btn:first-child { border-radius: 8px 0 0 8px; }
+.vb-group .vb-btn:last-child { border-radius: 0 8px 8px 0; }
+.vb-steps { display: inline-flex; gap: 2px; flex-wrap: wrap; }
+.vb-dot { padding: 0; font-variant-numeric: tabular-nums; color: var(--muted); }
+.vb-dot[data-current] { background: var(--seal); border-color: var(--seal); color: var(--on-seal); }
+.fig-caption { margin: 0 0 0.75rem; font-weight: 700; color: var(--seal); font-variant-numeric: tabular-nums; }
+.cues li { transition: color 0.3s ease; }
+.split.with-figure .cues li:not(.active) { color: var(--muted); }
+.cues li.active { color: var(--ink); }
+.watch-btn {
+  margin-top: 0.75rem;
+  min-height: 2.75rem;
+  padding: 0 1rem;
+  border-radius: 999px;
+  border: 1px solid var(--jade);
+  background: var(--jade-soft);
+  font-weight: 700;
+}
+
+.sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: calc(env(safe-area-inset-top, 0px) + 16px) 16px calc(env(safe-area-inset-bottom, 0px) + 16px);
+  background: color-mix(in srgb, var(--ink) 45%, transparent);
+}
+.sheet-inner {
+  width: min(64rem, 100%);
+  max-height: 100%;
+  overflow-y: auto;
+  background: var(--paper);
+  border-radius: 14px;
+  padding: 1.25rem;
+  display: grid;
+  gap: 0.75rem;
+}
+.sheet-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; }
+.sheet-head h2 { margin: 0.2rem 0 0; font: 600 1.35rem/1.25 var(--font-display); text-wrap: balance; }
+.sheet-head .kind { margin: 0; font-size: 0.75rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+.sheet-roles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; }
+.sheet-roles p { margin: 0; font-weight: 700; }
+.who { display: block; font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; }
+.who.attacker { color: var(--seal); }
+.who.defender { color: var(--jade); }
+
+@media (max-width: 64rem) {
+  .split.with-figure { grid-template-columns: minmax(0, 1fr); }
+  .viewer { aspect-ratio: 4 / 3; max-height: 52vh; }
+}
+@media (max-width: 34rem) {
+  .viewer { aspect-ratio: 1 / 1; }
+  .viewer.tall { aspect-ratio: 4 / 5; }
+  .sheet-roles { grid-template-columns: minmax(0, 1fr); }
+}

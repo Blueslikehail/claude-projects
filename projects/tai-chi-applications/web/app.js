@@ -13,7 +13,11 @@ import {
   attacksInForm,
   quizQuestion,
   partnerDrill,
+  POSES,
+  APPLICATION_POSES,
+  sequence,
 } from "./core/index.js";
+import { createViewer } from "./figure3d.js";
 
 // ---------- storage (per device; the app works without it) ----------
 const STORE_KEY = "tai-chi-applications";
@@ -34,12 +38,16 @@ const state = {
   flip: saved.flip ?? false,
   cards: saved.cards ?? {}, // card id -> SRS state, shared by all forms
   newDay: saved.newDay ?? { date: "", count: 0 }, // new cards started today
+  showFigure: saved.showFigure ?? true,
+  mirror: saved.mirror ?? false,
+  view: saved.view ?? "front",
+  speed: saved.speed ?? 1,
 };
 const NEW_PER_DAY = 10;
 function save() {
   try {
-    const { formId, step, mode, showApps, timer, flip, cards, newDay } = state;
-    localStorage.setItem(STORE_KEY, JSON.stringify({ formId, step, mode, showApps, timer, flip, cards, newDay }));
+    const { formId, step, mode, showApps, timer, flip, cards, newDay, showFigure, mirror, view, speed } = state;
+    localStorage.setItem(STORE_KEY, JSON.stringify({ formId, step, mode, showApps, timer, flip, cards, newDay, showFigure, mirror, view, speed }));
   } catch {
     /* storage unavailable: keep going in memory */
   }
@@ -69,7 +77,78 @@ function appCard(app) {
       <dt>Key point</dt><dd>${esc(app.keyPoint)}</dd>
       ${app.counter ? `<dt>Counter</dt><dd>${esc(app.counter)}</dd>` : ""}
     </dl>
+    ${watchButton(app.id)}
   </div>`;
+}
+
+const watchButton = (appId) =>
+  APPLICATION_POSES[appId] && globalThis.THREE
+    ? `<button type="button" class="watch-btn" data-watch="${esc(appId)}">Watch in 3D</button>`
+    : "";
+
+// ---------- 3D viewer controls (shared by the practice figure and the application sheet) ----------
+function viewerBar(bar, viewer, { onSeek } = {}) {
+  bar.innerHTML = `
+    <button type="button" class="vb-btn vb-play" data-act="play">Pause</button>
+    <div class="vb-steps" data-steps></div>
+    <div class="vb-group" role="group" aria-label="Speed">
+      <button type="button" class="vb-btn" data-speed="0.5">½×</button>
+      <button type="button" class="vb-btn" data-speed="1">1×</button>
+    </div>
+    <div class="vb-group" role="group" aria-label="View">
+      <button type="button" class="vb-btn" data-cam="front">Front</button>
+      <button type="button" class="vb-btn" data-cam="side">Side</button>
+      <button type="button" class="vb-btn" data-cam="back">Back</button>
+    </div>
+    <button type="button" class="vb-btn" data-act="mirror" title="Flip left and right, like following in a mirror">Mirror</button>`;
+  let seq = null;
+  const sync = () => {
+    bar.querySelector("[data-act=play]").textContent = viewer.playing ? "Pause" : "Play";
+    for (const b of bar.querySelectorAll("[data-speed]")) b.setAttribute("aria-pressed", String(Number(b.dataset.speed) === state.speed));
+    for (const b of bar.querySelectorAll("[data-cam]")) b.setAttribute("aria-pressed", String(b.dataset.cam === state.view));
+    bar.querySelector("[data-act=mirror]").setAttribute("aria-pressed", String(state.mirror));
+  };
+  viewer.setSpeed(state.speed);
+  viewer.setView(state.view);
+  viewer.setMirror(state.mirror);
+  bar.addEventListener("click", (e) => {
+    const b = e.target.closest("button");
+    if (!b) return;
+    if (b.dataset.act === "play") viewer.playing ? viewer.pause() : viewer.play();
+    if (b.dataset.act === "mirror") {
+      state.mirror = !state.mirror;
+      viewer.setMirror(state.mirror);
+    }
+    if (b.dataset.speed) {
+      state.speed = Number(b.dataset.speed);
+      viewer.setSpeed(state.speed);
+    }
+    if (b.dataset.cam) {
+      state.view = b.dataset.cam;
+      viewer.setView(state.view);
+    }
+    if (b.dataset.seek !== undefined && seq) {
+      viewer.pause();
+      viewer.seek(seq.times[Number(b.dataset.seek)]);
+      onSeek?.();
+    }
+    save();
+    sync();
+  });
+  sync();
+  return {
+    setSequence(s) {
+      seq = s;
+      bar.querySelector("[data-steps]").innerHTML = s.poses
+        .map((p, i) => `<button type="button" class="vb-dot" data-seek="${i}" title="${esc(p.label)}"><span>${i + 1}</span></button>`)
+        .join("");
+      sync();
+    },
+    update(index) {
+      bar.querySelectorAll("[data-seek]").forEach((b, i) => b.toggleAttribute("data-current", i === index));
+      bar.querySelector("[data-act=play]").textContent = viewer.playing ? "Pause" : "Play";
+    },
+  };
 }
 
 // ---------- form + mode ----------
@@ -121,20 +200,22 @@ function renderPosture() {
   state.step = Math.min(Math.max(0, state.step), list.length - 1);
   const { number, note, posture: p } = list[state.step];
   $("#step-count").textContent = `Step ${number} of ${list.length} · ${form().fullName ?? form().name}`;
-  $("#posture").innerHTML = `
-    <div class="scroll" lang="zh">${esc(p.hanzi)}</div>
-    <div class="body">
+  $("#posture-scroll").textContent = p.hanzi;
+  $("#posture-head").innerHTML = `
       ${note ? `<p class="note">${esc(note)}</p>` : ""}
       <h1>${esc(p.name)}</h1>
       <p class="pinyin" lang="zh-Latn">${esc(p.pinyin)}</p>
-      ${energyChips(p.energies)}
+      ${energyChips(p.energies)}`;
+  $("#posture-text").innerHTML = `
+      <p class="fig-caption" id="fig-caption" ${figure ? "" : "hidden"}></p>
       <ol class="cues">${p.cues.map((c) => `<li>${esc(c)}</li>`).join("")}</ol>
-      <p class="principle">${esc(p.principle)}</p>
+      <p class="principle">${esc(p.principle)}</p>`;
+  $("#posture-apps").innerHTML = `
       <div ${state.showApps ? "" : "hidden"}>
         <h2 class="apps-title">Applications</h2>
         <div class="apps">${p.applications.map(appCard).join("")}</div>
-      </div>
-    </div>`;
+      </div>`;
+  showFigure(p);
   $("#prev-step").disabled = state.step === 0;
   $("#next-step").disabled = state.step === list.length - 1;
   for (const btn of document.querySelectorAll("#step-list [data-step]")) {
@@ -188,6 +269,105 @@ $("#stage").addEventListener("pointerup", (e) => {
   if (Math.abs(dx) > 70 && Math.abs(dy) < 50) goTo(state.step + (dx < 0 ? 1 : -1));
 });
 $("#stage").addEventListener("pointercancel", () => (swipe = null));
+
+// ---------- practice figure ----------
+let figure = null; // { viewer, bar, seq, postureId }
+const figureWrap = $("#figure-wrap");
+
+function showFigure(p) {
+  const on = state.showFigure && POSES[p.id];
+  figureWrap.hidden = !on;
+  $("#posture-split").classList.toggle("with-figure", Boolean(on));
+  if (!on) return figure?.viewer?.pause();
+  if (!figure) {
+    const viewer = createViewer($("#viewer"), { onFrame: onFigureFrame });
+    if (!viewer) {
+      figure = { viewer: null };
+      return;
+    }
+    figure = { viewer, bar: viewerBar($("#viewer-bar"), viewer) };
+  }
+  if (!figure.viewer) return;
+  if (figure.postureId !== p.id) {
+    figure.postureId = p.id;
+    figure.seq = sequence(POSES[p.id]);
+    figure.viewer.setScene([{ seq: figure.seq, color: "jade" }]);
+    figure.bar.setSequence(figure.seq);
+    figure.lastIndex = -1;
+  }
+  figure.viewer.play();
+}
+
+function onFigureFrame({ figures }) {
+  const f = figures[0];
+  if (!f || f.index === figure.lastIndex) return;
+  figure.lastIndex = f.index;
+  const key = figure.seq.poses[f.index];
+  const cues = [key.cue ?? []].flat();
+  document.querySelectorAll("#posture-text .cues li").forEach((li, i) => li.classList.toggle("active", cues.includes(i)));
+  const cap = $("#fig-caption");
+  if (cap) {
+    cap.hidden = false;
+    cap.textContent = `${f.index + 1}/${figure.seq.poses.length} · ${key.label}`;
+  }
+  figure.bar.update(f.index);
+}
+
+const figureBtn = $("#toggle-figure");
+figureBtn.addEventListener("click", () => {
+  state.showFigure = !state.showFigure;
+  save();
+  figureBtn.setAttribute("aria-pressed", String(state.showFigure));
+  showFigure(steps()[state.step].posture);
+});
+
+// ---------- application sheet (two figures) ----------
+let sheet = null;
+function openSheet(appId) {
+  const app = formApplications(form()).find((a) => a.id === appId) ?? null;
+  const data = APPLICATION_POSES[appId];
+  if (!app || !data) return;
+  if (figure?.viewer) figure.viewer.pause();
+  $("#app-sheet").hidden = false;
+  $("#sheet-kind").textContent = `${app.posture.name} · ${ATTACKS[app.attack].label}`;
+  $("#sheet-title").textContent = app.scenario;
+  const defender = sequence(data.defender.frames);
+  const attacker = sequence(data.attacker.frames);
+  const viewer = createViewer($("#sheet-viewer"), {
+    view: "side",
+    onFrame: ({ figures }) => {
+      const [d, a] = figures;
+      $("#sheet-defender").textContent = d.seq.poses[d.index].label;
+      $("#sheet-attacker").textContent = a.seq.poses[a.index].label;
+      sheet.bar.update(d.index);
+    },
+  });
+  if (!viewer) return;
+  const prevView = state.view;
+  state.view = "side";
+  sheet = { viewer, bar: viewerBar($("#sheet-bar"), viewer), prevView };
+  viewer.setScene([
+    { seq: defender, color: "jade" },
+    { seq: attacker, color: "seal", placement: { at: data.attacker.at, face: 180 } },
+  ]);
+  sheet.bar.setSequence(defender);
+  $("#sheet-close").focus();
+}
+function closeSheet() {
+  if (!sheet) return;
+  sheet.viewer.dispose();
+  state.view = sheet.prevView;
+  sheet = null;
+  $("#app-sheet").hidden = true;
+  $("#sheet-bar").innerHTML = "";
+  if (figure?.viewer && state.mode === "practice") figure.viewer.play();
+}
+$("#sheet-close").addEventListener("click", closeSheet);
+document.addEventListener("keydown", (e) => e.key === "Escape" && closeSheet());
+document.addEventListener("click", (e) => {
+  const b = e.target.closest("[data-watch]");
+  if (b) openSheet(b.dataset.watch);
+});
 
 const appsBtn = $("#toggle-apps");
 appsBtn.addEventListener("click", () => {
@@ -432,6 +612,7 @@ function renderPartner() {
           ? `<p>${esc(defender.response)}</p><p class="key"><strong>Key point:</strong> ${esc(defender.keyPoint)}</p>`
           : `<button type="button" class="reveal" id="reveal-response">Show the response</button>`
       }
+      ${partner.revealed ? watchButton(partner.drill.app.id) : ""}
     </div>`;
 }
 $("#partner-roles").addEventListener("click", (e) => {
@@ -470,6 +651,7 @@ function renderAll() {
 }
 
 appsBtn.setAttribute("aria-pressed", String(state.showApps));
+figureBtn.setAttribute("aria-pressed", String(state.showFigure));
 flipBtn.setAttribute("aria-pressed", String(state.flip));
 $("#timer-select").value = String(state.timer);
 renderAll();

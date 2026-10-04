@@ -9,6 +9,7 @@ postures and applications. It's tested in Node and served unchanged to the brows
 
 | Mode | What it does |
 | --- | --- |
+| **3D figure** | In Practice, an animated 3D mannequin performs each posture keyframe by keyframe, with the matching cue highlighted. Drag to rotate, pinch to zoom; Front / Side / Back views, ½× speed, tap a keyframe number to stop there, and **Mirror** to follow along facing the tablet. Discs under the feet show the weight split. Applications marked **Watch in 3D** play with two figures, attacker and defender. |
 | **Practice** | Step through the form: Chinese name, pinyin, energies, movement cues, principle and applications. Big Previous/Next buttons, swipe or arrow keys. *Keep screen on* (wake lock) and *Auto-advance* every 15/30/60 s for hands-free practice. The Applications panel can be hidden for pure form work. |
 | **Study** | Spaced-repetition flashcards (simplified SM-2). Each application gives two cards: posture → application, and scenario → posture. 10 new cards a day. |
 | **Quiz** | "Opponent does X: which posture?" Four choices, filterable by attack type. Wrong answers are never another posture that also answers that attack. |
@@ -42,6 +43,28 @@ All content is in `src/core/data/`, written as plain JS objects:
 | `postures.js` | The posture library: names, cues, principle and applications. Shared by every form |
 | `forms/yang-28.js` | The 28 form as an ordered list of posture ids, with optional per-step notes |
 
+| `poses.js` | 3D keyframes for each posture, and two-figure application scenes |
+
+### How the 3D poses work
+
+Poses are written the way a teacher describes them, not as joint angles: where each foot
+is on the ground (and which way it points), how the weight is split, how deep the stance
+sinks, which way the waist faces, and where each hand is relative to the chest with its
+palm direction. For example, the end of Brush Knee:
+
+```js
+{ label: "Brush and push", cue: 2, w: 0.7, face: 0,
+  hl: [-0.22, -0.4, 0.2, "down"], hr: [0.02, 0.05, 0.45, "forward"] }
+```
+
+Each keyframe only lists what changes. `src/core/figure/` turns this into joints with
+two-bone IK, with elbows sinking and knees tracking over the toes. When a foot moves, the step is
+choreographed automatically: weight shifts onto the other leg, the foot lifts and travels,
+then the weight settles. `npm test` checks every keyframe of every posture is physically
+reachable, feet stay planted, bones keep their length through every transition, and elbows
+stay below the shoulders. The viewer (`web/figure3d.js`) draws the mannequin with three.js,
+loaded from cdnjs, so the 3D view needs a connection the first time. Everything else works offline.
+
 **Adding the 85 form:** create `forms/yang-85.js` with the same shape, list it in `FORMS` in
 `src/core/forms.js`, and add the postures the 28 form lacks (e.g. Chop with Fist,
 Step Back and Ride the Tiger, Turn and Sweep Lotus, Bend the Bow to Shoot the Tiger) to
@@ -62,6 +85,16 @@ progress. `npm test` reports any step that points at a posture that doesn't exis
   reloads, no horizontal overflow, no script errors. One gotcha: the sandbox's only CJK font
   (WenQuanYi) has broken vertical metrics, so the vertical names overlapped there. With the
   real Noto Serif SC subset the page loads from Google Fonts, they render correctly.
-- **Ideas next:** the 85 form; stick-figure animation of each posture and its application;
+- **3D figures (phase 2):** a mannequin drawn from solved joint positions rather than a
+  rigged model, so there are no model files and poses stay editable as data. Writing poses
+  as feet/weight/waist/hands with IK made them look natural with little tuning. The
+  tests caught 6 unreachable hand positions while authoring. Two applications have
+  two-figure scenes so far (Brush Knee vs front kick, Roll Back vs punch); the rest show the
+  posture alone. Gotchas: three.js r128 doesn't convert CSS colours to linear, so colours
+  were washed out until converted. The sandbox blocks cdnjs, so tests serve the same three.js
+  build from npm. Poses are a first pass: hand shapes are simple paddles, and each posture
+  is authored in its own frame, so the form doesn't flow continuously from one step to the next.
+- **Ideas next:** the 85 form; two-figure scenes for every application; continuous
+  whole-form playback; a slow-motion "ghost" of the previous keyframe;
   a Claude-powered coach that answers questions from this data; "drill this posture's
   applications" from the practice screen; export/import of study progress between devices.
