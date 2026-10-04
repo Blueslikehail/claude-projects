@@ -1,0 +1,13 @@
+{
+  "name": "tai-chi-applications",
+  "version": "0.1.0",
+  "description": "Learn the martial applications of tai chi forms: practice, study and partner drills on a tablet.",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "start": "node scripts/serve.mjs",
+    "dev": "node scripts/serve.mjs",
+    "build": "node scripts/build.mjs",
+    "test": "node --test"
+  }
+}
