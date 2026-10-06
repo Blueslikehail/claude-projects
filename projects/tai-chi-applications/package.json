@@ -8,6 +8,7 @@
     "start": "node scripts/serve.mjs",
     "dev": "node scripts/serve.mjs",
     "build": "node scripts/build.mjs",
-    "test": "node --test"
+    "test": "node --test",
+    "deploy": "npm run build && npx wrangler deploy"
   }
 }

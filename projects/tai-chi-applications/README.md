@@ -22,7 +22,28 @@ Progress, the current step and settings are saved in the browser (`localStorage`
 ```bash
 npm start            # http://localhost:8788 (serves web/ and src/core/ directly)
 npm run build        # dist/ = web/ + src/core/ as dist/core/, ready for any static host
+npm run deploy       # build and deploy to Cloudflare (see below)
 ```
+
+### Deploy to Cloudflare
+
+The app is static files served by a Cloudflare Worker (`wrangler.jsonc` points at `dist/`;
+there is no server code).
+
+**From the dashboard** (Workers & Pages → Create → Import a repository), with
+**Advanced settings → Root directory** `projects/tai-chi-applications`:
+
+| Field | Value |
+| --- | --- |
+| Project name | `tai-chi-applications` (must match `name` in `wrangler.jsonc`) |
+| Build command | `npm run build` |
+| Deploy command | `npx wrangler deploy` |
+
+Builds run from the repo's production branch (Settings → Build → Branch control), and
+every push to it redeploys. The site is then at
+`https://tai-chi-applications.<your-subdomain>.workers.dev`.
+
+**From your machine:** `npm run deploy` (build + `npx wrangler deploy`; asks you to log in once).
 
 ## Test
 
