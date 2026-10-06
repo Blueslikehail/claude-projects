@@ -1,0 +1,8 @@
+// Cloudflare Worker serving the static app (no server code): dist/ is built by `npm run build`.
+{
+  "name": "tai-chi-applications",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./dist"
+  }
+}
