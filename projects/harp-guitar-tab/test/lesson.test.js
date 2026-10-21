@@ -194,3 +194,21 @@ test("your licks only go into the styles they're for", () => {
   const inMinor = [1, 2, 3, 4, 5].some((seed) => generateLesson({ style: "minor", seed, myLicks: [{ ...mine[0], styles: ["minor"] }] }).licks.some((l) => l.mine));
   assert.deepEqual([inShuffle, inReed, inMinor], [true, false, true]);
 });
+
+test("a lesson can follow a recording's drifting beat grid", async () => {
+  const { gridTime } = await import("../src/core/lesson/generate.js");
+  // Beats that slow down: 0.6 s apart, growing 2 ms per beat, starting at 3 s.
+  const beats = Array.from({ length: 120 }, (_, i) => 3 + i * 0.6 + i * i * 0.001);
+  const at = gridTime({ beats, startBeat: 4, swing: 2 / 3 });
+  assert.equal(at(0), beats[4]);
+  assert.ok(Math.abs(at(1) - (beats[4] + (2 / 3) * (beats[5] - beats[4]))) < 1e-12);
+  assert.ok(at(500) > beats.at(-1), "extrapolates past the end");
+  const lesson = generateLesson({ songKey: "A", seed: 3, choruses: 2, grid: { beats, startBeat: 4, swing: 2 / 3 } });
+  assert.equal(lesson.chordTrack[0].time, beats[4]);
+  assert.equal(lesson.chordTrack[1].time, beats[8]);
+  assert.ok(lesson.chordTrack[13].duration > lesson.chordTrack[0].duration, "bars stretch with the slowing tempo");
+  for (const e of lesson.events) {
+    const bar = lesson.chordTrack.findLast((c) => c.time <= e.time + 1e-9);
+    assert.ok(bar, "every note sits in a bar");
+  }
+});

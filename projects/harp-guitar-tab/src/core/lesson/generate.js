@@ -40,6 +40,20 @@ export function eighthTime(units, tempo, swing = true) {
 
 const swingAmount = (swing) => (swing === true ? 2 / 3 : swing === false ? 0.5 : swing);
 
+/** Eighth-note position -> seconds on a recording's (possibly drifting) beat grid. */
+export function gridTime({ beats, startBeat = 0, swing = 2 / 3 }) {
+  const beatAt = (i) => {
+    if (i < beats.length) return beats[i];
+    const last = beats.length - 1;
+    return beats[last] + (i - last) * (beats[last] - beats[last - 1]); // extrapolate past the end
+  };
+  return (units) => {
+    const i = startBeat + Math.floor(units / 2);
+    const frac = units % 2 ? swing : 0;
+    return beatAt(i) + frac * (beatAt(i + 1) - beatAt(i));
+  };
+}
+
 /**
  * Pick a lick for a slot: at or under the level, mostly at it, not the one just used.
  * Your own licks for the slot (any level) are used most of the time when there are some.
@@ -62,8 +76,10 @@ function pickLick(slot, level, style, random, recent, mine = []) {
  *           seed?: number, myLicks?: object[] }} options
  *   style: a key of STYLES (default "shuffle"); tempo defaults to the style's.
  *   myLicks: your own licks ({ id, name, slot, tab, song?, styles? }, see validateLick)
+ *   grid: follow a recording instead of a steady tempo — { beats: seconds[], startBeat, swing }
+ *         (beats from analyzeSong; startBeat = the beat where a 12-bar chorus starts).
  */
-export function generateLesson({ songKey = "E", style = "shuffle", level = 2, tempo, choruses = 1, seed = 1, myLicks = [] } = {}) {
+export function generateLesson({ songKey = "E", style = "shuffle", level = 2, tempo, choruses = 1, seed = 1, myLicks = [], grid } = {}) {
   const def = STYLES[style];
   if (!def) throw new Error(`Unknown style: ${style}`);
   tempo ??= def.tempo.default;
@@ -73,7 +89,7 @@ export function generateLesson({ songKey = "E", style = "shuffle", level = 2, te
   const harpKey = harpForSong(songKey, def.position);
   const harp = createHarp(harpKey);
   const barUnits = 8;
-  const at = (units) => eighthTime(units, tempo, swing);
+  const at = grid ? gridTime(grid) : (units) => eighthTime(units, tempo, swing);
 
   const events = [];
   const chordTrack = [];

@@ -13,6 +13,10 @@
       <h1>Harp Tab Player</h1>
       <div class="actions">
         <button id="new-lesson" class="button primary">🎵 New lesson</button>
+        <label class="button" title="Load a record you own: it finds the key, beat and verses and writes licks in time with it">
+          🎧 Play along with a song
+          <input id="song-file" type="file" accept="audio/*,video/*" hidden />
+        </label>
         <button id="live" class="button" title="Show the tab of what you play (M)">🎤 Live tab</button>
         <label class="button" title="Detect the notes in a recording of a solo harmonica. Works best when the harmonica plays alone.">
           Transcribe a recording <span class="beta">beta</span>
@@ -25,6 +29,8 @@
       <section id="empty" class="empty">
         <p><strong>🎵 New lesson</strong> writes a 12-bar blues for you to learn: harmonica tab with the
           chords, a band to play along with, at your level and tempo.</p>
+        <p class="muted"><strong>🎧 Play along with a song</strong> takes a blues record you own, finds its key,
+          beat and verses, tells you which harp to use and writes licks in time with it.</p>
         <p class="muted"><strong>🎤 Live tab</strong> shows the holes you play as you play them.
           <strong>Transcribe a recording</strong> (beta) tries to read a solo harmonica recording —
           drop the file here.</p>
@@ -37,6 +43,30 @@
         <div class="media-wrap">
           <video id="media" controls playsinline preload="auto"></video>
         </div>
+
+        <section id="song-card" class="lesson-card" hidden aria-label="Play along with a song">
+          <p id="song-summary" class="song-summary"></p>
+          <div class="lesson-controls">
+            <label>Key <select id="song-key"></select></label>
+            <label class="check"><input id="song-minor" type="checkbox" /> minor</label>
+            <span class="segmented" role="group" aria-label="Tempo">
+              <button id="song-half" class="seg" title="The tempo is double what it should be">Tempo ÷2</button>
+              <button id="song-double" class="seg" title="The tempo is half what it should be">×2</button>
+            </span>
+            <button id="song-bar1" class="button" title="Pause where a verse starts (bar 1) and press this">Bar 1 is here</button>
+            <span class="segmented" role="group" aria-label="Shift bars by a beat">
+              <button id="song-beat-back" class="seg" title="Bars start one beat earlier">◀ beat</button>
+              <button id="song-beat-fwd" class="seg" title="Bars start one beat later">beat ▶</button>
+            </span>
+          </div>
+          <div class="lesson-controls" style="margin-top: 8px">
+            <label>Licks style <select id="song-style"></select></label>
+            <label>Level <select id="song-level"></select></label>
+            <button id="song-new" class="button primary">New licks</button>
+          </div>
+          <p class="muted small">Your copy of the record stays in your browser. Detection can miss on old or loose
+            recordings — the controls above fix the key, tempo and where verses start.</p>
+        </section>
 
         <section id="lesson-card" class="lesson-card" hidden aria-label="Lesson settings">
           <div class="lesson-controls">

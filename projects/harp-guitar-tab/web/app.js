@@ -21,6 +21,7 @@ import {
   suggestHarps,
 } from "./core/index.js";
 import { createLessons } from "./lesson.js";
+import { createSongs } from "./song.js";
 import { createPractice } from "./practice.js";
 
 const ANALYSIS_RATE = 22050;
@@ -76,8 +77,9 @@ function showPlayer() {
   $("player").hidden = false;
   $("player").classList.toggle("no-media", !state.originalUrl);
   $("player").classList.toggle("lesson-mode", Boolean(state.lesson));
-  $("src-original").textContent = state.lesson ? "With harp" : "Recording";
-  $("src-synth").textContent = state.lesson ? "Backing only" : "Hear the tab";
+  const [a, b] = state.sourceLabels ?? (state.lesson ? ["With harp", "Backing only"] : ["Recording", "Hear the tab"]);
+  $("src-original").textContent = a;
+  $("src-synth").textContent = b;
 }
 
 function blobUrl(bytes) {
@@ -85,15 +87,25 @@ function blobUrl(bytes) {
 }
 
 /** Show a generated lesson: exact tab (tokens pinned as written), chords, two mixes. */
-function loadLesson(lesson, fullWav, backingWav) {
+/**
+ * Show a lesson: exact tab (tokens pinned as written), chords, and two sounds to switch
+ * between. `first`/`second` are WAV bytes or ready-made URLs (e.g. the user's recording).
+ * options: labels for the two sounds, status text, keepTime (stay at the same spot).
+ */
+function loadLesson(lesson, first, second, { labels, message, keepTime = false } = {}) {
   worker?.terminate();
-  for (const url of [state.originalUrl, state.backingUrl]) if (url) URL.revokeObjectURL(url);
+  const urlOf = (x) => (typeof x === "string" ? x : blobUrl(x));
+  const [firstUrl, secondUrl] = [urlOf(first), urlOf(second)];
+  for (const [old, now] of [[state.originalUrl, firstUrl], [state.backingUrl, secondUrl]]) {
+    if (old && old !== now && old !== firstUrl && old !== secondUrl) URL.revokeObjectURL(old);
+  }
   state.lesson = lesson;
+  state.sourceLabels = labels;
   state.fileName = lesson.title;
-  state.originalUrl = blobUrl(fullWav);
-  state.backingUrl = blobUrl(backingWav);
+  state.originalUrl = firstUrl;
+  state.backingUrl = secondUrl;
   dropSynth();
-  media.pause();
+  if (!keepTime) media.pause();
   resetEdits();
   state.notes = lesson.events.map((e, id) => ({ ...e, id }));
   for (const n of state.notes) state.tokenEdits.set(n.id, n.token);
@@ -101,11 +113,11 @@ function loadLesson(lesson, fullWav, backingWav) {
   state.songKey = lesson.songKey;
   $("harp").value = lesson.harpKey;
   $("song").value = lesson.songKey;
-  setSource(state.source === "synth" ? "synth" : "original", { keepTime: false });
+  setSource(state.source === "synth" ? "synth" : "original", { keepTime });
   showPlayer();
   remap();
   $("tab-title").textContent = lesson.title;
-  status(`${lesson.title} · ${lesson.tempo} bpm. Press play, loop a line with ⟲, or switch to <b>Backing only</b> and play it yourself.`);
+  status(message ?? `${lesson.title} · ${lesson.tempo} bpm. Press play, loop a line with ⟲, or switch to <b>Backing only</b> and play it yourself.`);
 }
 
 // ---------- loading & analysis ----------
@@ -125,6 +137,8 @@ let worker = null;
 
 async function loadFile(file) {
   state.lesson = null;
+  state.sourceLabels = null;
+  $("song-card").hidden = true;
   $("lesson-card").hidden = true;
   $("lesson-extras").hidden = true;
   $("tab-title").textContent = "Tab";
@@ -659,9 +673,22 @@ function escapeHtml(s) {
 
 const lessons = createLessons({ loadLesson, status });
 $("new-lesson").addEventListener("click", () => {
+  $("song-card").hidden = true;
   $("lesson-card").hidden = false;
   $("lesson-extras").hidden = false;
   lessons.generate();
+});
+
+createSongs({
+  loadLesson,
+  status,
+  decodeToMono,
+  media,
+  showCards: () => {
+    $("lesson-card").hidden = true;
+    $("lesson-extras").hidden = true;
+    $("song-card").hidden = false;
+  },
 });
 
 $("live").addEventListener("click", () => {

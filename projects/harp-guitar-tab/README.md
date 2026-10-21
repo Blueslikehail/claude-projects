@@ -125,8 +125,30 @@ minor → Help Me, Jimmy Reed → Bright Lights, Big City), and "… lesson in E
 the matching style. Your licks can be for any 2nd-position style or one style.
 CLI: `npm start -- lesson --style reed --song A lesson.wav`.
 
-Roadmap: load an original recording → key, tempo and changes → licks in sync with it ·
-richer sound (sampled instruments) · more licks and forms (quick change, slow
+**Recorded instrument sound (done).** Lessons are played with single-note recordings from
+the FluidR3_GM soundfont (CC BY 3.0 — see `web/samples/CREDITS.md`): harmonica, electric
+bass, piano and organ, ~950 KB, rendered in the page with an OfflineAudioContext. Slides
+bend one sample; long notes loop its steady part; drums stay synthesized. A **Sound**
+selector switches to the synthesizer, which is also the fallback if samples can't load.
+
+**🎧 Play along with a song (done).** `src/core/audio/songAnalysis.js`, `web/song.js`:
+load a record you own and the app works out — from the whole band, not the harp —
+
+- the **key** (overall note balance, then the candidate whose bar chords make the best
+  12-bar progression) and major/minor (from 150–330 Hz, below most harp blue notes);
+- the **tempo** (onset autocorrelation, then ×2 / ÷2 / ×1.5 candidates scored by how well
+  tracked beats meet the kick/snare/bass hits) and the **beats**, with a dynamic-programming
+  tracker that follows tempo drift; **shuffle or straight**;
+- **bar 1** (kick drums on 1 and 3, chord changes at bar lines), each bar's chord (I/IV/V)
+  and where **12-bar verses** start.
+
+It says which harp to use and writes licks in a fitting style that follow the record's beat
+grid. Sounds: **Recording** or **Recording + licks**; the mic scores you as usual.
+Corrections: key, minor, tempo ÷2/×2, **Bar 1 is here**, shift by a beat — each re-runs
+only the cheap steps in the worker.
+
+Roadmap: more styles (3rd-position minor, swing, country blues) · LLM-written licks ·
+6 guitar · 7 instrument separation · more licks and forms (quick change, slow
 blues, minor) · LLM-written licks via a Worker · 6 guitar · 7 instrument separation.
 5 chord detection / polyphonic (basic-pitch) · 6 guitar · 7 instrument separation.
 Every stage is a swappable module, so separation or URL import can later run on a server.
@@ -274,3 +296,15 @@ npm test
   natural -3 (the major 3rd); a test checks no major 3rd sounds in a minor lesson. Song
   matching first ranked by harp alone, which suggested Juke for a slow blues; feel now
   weighs more than the harp, and distinctive forms (minor groove, 16-bar) count extra.
+- **Sampled sound:** the soundfont's README states CC BY 3.0, so the files ship with
+  credits. The sampled mix came out ~4x quieter than the synth; both mixes now share one
+  normalization gain so switching between them keeps the level.
+- **Song analysis:** measured on 18 synthesized band recordings (all six styles, random
+  keys, tempos and start points, with noise): key 18/18, tempo 18/18, feel 18/18, beats
+  within 25 ms 18/18, verse start 16/18. Along the way: onsets got their own short FFT
+  (beats were 43 ms early), slow blues triplet hi-hats and straight eighths fooled the
+  tempo until candidates were scored against low/mid-band hits only, low bass notes are too
+  close in frequency to tell major from minor (moved to 150–330 Hz), and the tonic vs 5th
+  confusion went away once the key had to make a sensible 12-bar progression. These are
+  synthetic recordings — real records (tempo drift, no drums, intros, solos over stop-time,
+  8- and 16-bar forms) will do worse; hence the correction buttons.

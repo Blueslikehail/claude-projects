@@ -192,6 +192,8 @@ label { display: inline-flex; align-items: center; gap: 6px; }
 .lesson-controls { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; }
 .lesson-harp { color: var(--accent); }
 .lesson-blurb { margin: 8px 0 0; }
+.song-summary { margin: 0 0 8px; }
+.warn { display: block; margin-top: 4px; color: #b45309; }
 .lesson-licks { margin: 8px 0 0; padding-left: 20px; columns: 2; font-size: 13px; }
 @media (max-width: 640px) { .lesson-licks { columns: 1; } }
 .lesson-mode .transcribe-only { display: none; }

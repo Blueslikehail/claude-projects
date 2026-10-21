@@ -21,3 +21,4 @@ export * from "./lesson/generate.js";
 export * from "./songs.js";
 export * from "./lesson/styles.js";
 export * from "./audio/sampler.js";
+export * from "./audio/songAnalysis.js";

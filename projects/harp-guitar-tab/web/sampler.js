@@ -68,9 +68,10 @@ function schedule(ctx, dest, notes, buffers, { gain = 0.8, attack = 0.008, relea
  * (use normalizeTogether on the mixes you'll switch between).
  * @param {{ harp?: boolean, backing?: boolean }} parts
  */
-export async function renderLessonSampled(lesson, samples, { harp = true, backing = true } = {}) {
-  const length = Math.ceil((lesson.duration + 2) * RATE);
-  const ctx = new OfflineAudioContext(1, length, RATE);
+export async function renderLessonSampled(lesson, samples, { harp = true, backing = true, sampleRate = RATE, duration } = {}) {
+  const rate = sampleRate;
+  const length = Math.ceil((duration ?? lesson.duration + 2) * rate);
+  const ctx = new OfflineAudioContext(1, length, rate);
   const master = ctx.createGain();
   master.connect(ctx.destination);
   if (backing) {
@@ -78,8 +79,8 @@ export async function renderLessonSampled(lesson, samples, { harp = true, backin
     schedule(ctx, master, lesson.backing.comp, samples.piano, { gain: 0.28, release: 0.08 });
     schedule(ctx, master, lesson.backing.pads ?? [], samples.organ, { gain: 0.16, attack: 0.08, release: 0.2 });
     const drums = new Float32Array(length);
-    renderDrums(lesson.backing.drums, drums, RATE, { gain: 0.35 });
-    const buf = ctx.createBuffer(1, length, RATE);
+    renderDrums(lesson.backing.drums, drums, rate, { gain: 0.35 });
+    const buf = ctx.createBuffer(1, length, rate);
     buf.copyToChannel(drums, 0);
     const src = ctx.createBufferSource();
     src.buffer = buf;
