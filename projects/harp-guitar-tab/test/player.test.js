@@ -71,3 +71,14 @@ test("dev server maps /core to src/core and refuses paths outside", () => {
     assert.ok(file === null || /\/(web|src\/core)\//.test(file), `${sneaky} -> ${file}`);
   }
 });
+
+test("barPhrases: two bars per line, labelled with their chords", async () => {
+  const { barPhrases } = await import("../src/core/player.js");
+  const chordTrack = ["E7", "E7", "B7", "A7", "E7", "E7"].map((name, i) => ({ name, time: i * 2, duration: 2 }));
+  const evs = [0.5, 1.5, 4.2, 6.1, 7.9].map((time) => ({ time, duration: 0.3 }));
+  const lines = barPhrases(evs, chordTrack);
+  assert.deepEqual(lines.map((l) => [l.first, l.last, l.label, l.bar]), [
+    [0, 1, "E7", 1],
+    [2, 4, "B7 A7", 3],
+  ]);
+});

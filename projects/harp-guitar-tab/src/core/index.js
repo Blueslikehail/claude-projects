@@ -15,3 +15,6 @@ export * from "./live.js";
 export * from "./score.js";
 export * from "./audio/fft.js";
 export * from "./audio/poly.js";
+export * from "./audio/band.js";
+export * from "./lesson/licks.js";
+export * from "./lesson/generate.js";

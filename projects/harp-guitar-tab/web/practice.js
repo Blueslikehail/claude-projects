@@ -119,7 +119,7 @@ export function createPractice(app) {
     const bar = document.createElement("div");
     bar.className = "played";
     bar.style.left = `${time * app.px()}px`;
-    bar.style.top = `calc(var(--row) * ${best ? app.rowOf(best.center) : 10} + var(--row) - 7px)`;
+    bar.style.top = `calc(var(--row) * ${app.rowOf(best ? best.center : 0)} + var(--row) - 7px)`;
     bar.title = `You: ${noteName(pitch)}${best ? ` (${best.token})` : ""}`;
     app.track.append(bar);
     s.pass.bars.push(bar);

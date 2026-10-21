@@ -73,3 +73,22 @@ export function applyTokenEdits(events, tokenEdits, candidatesFor) {
     return alt ? { ...e, ...alt } : e;
   });
 }
+
+/**
+ * Lines for a lesson's tab: `barsPerLine` bars each, labelled with their chords
+ * (e.g. "B7 A7"). Same shape as phrases(); lines without notes are left out.
+ */
+export function barPhrases(events, chordTrack, { barsPerLine = 2 } = {}) {
+  const out = [];
+  for (let b = 0; b < chordTrack.length; b += barsPerLine) {
+    const bars = chordTrack.slice(b, b + barsPerLine);
+    const start = bars[0].time;
+    const end = bars.at(-1).time + bars.at(-1).duration;
+    const idx = [];
+    events.forEach((e, i) => e.time >= start - 1e-9 && e.time < end - 1e-9 && idx.push(i));
+    if (!idx.length) continue;
+    const names = bars.map((c) => c.name).filter((n, i, all) => i === 0 || n !== all[i - 1]);
+    out.push({ first: idx[0], last: idx.at(-1), start, end, bar: b + 1, label: names.join(" ") });
+  }
+  return out;
+}

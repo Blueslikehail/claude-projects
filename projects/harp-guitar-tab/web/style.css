@@ -117,7 +117,14 @@ label { display: inline-flex; align-items: center; gap: 6px; }
 .roll-wrap { display: flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; background: var(--surface); }
 .holes { width: 34px; flex: none; border-right: 1px solid var(--border); background: var(--surface-2); }
 .holes div { height: var(--row); font-size: 12px; text-align: center; line-height: var(--row); color: var(--muted); }
-.roll { position: relative; flex: 1; height: calc(var(--row) * 11); overflow: hidden; cursor: pointer; }
+.roll { position: relative; flex: 1; height: calc(var(--row) * 12); overflow: hidden; cursor: pointer; }
+.holes .chord-head { background: var(--surface); }
+.bar-chord {
+  position: absolute; top: 0; height: var(--row); box-sizing: border-box; padding: 0 6px;
+  border-left: 2px solid var(--muted); font: 700 12px/var(--row) system-ui, sans-serif; color: var(--text);
+  background: var(--surface-2); pointer-events: none; white-space: nowrap; overflow: hidden;
+}
+.bar-chord.away { color: var(--accent); }
 .roll::before {
   content: ""; position: absolute; inset: 0; pointer-events: none;
   background: repeating-linear-gradient(to bottom, transparent 0 calc(var(--row) - 1px), var(--border) calc(var(--row) - 1px) var(--row));
@@ -178,6 +185,16 @@ label { display: inline-flex; align-items: center; gap: 6px; }
 .note.wrong { box-shadow: 0 0 0 3px #d97706; }
 .note.miss { box-shadow: 0 0 0 3px var(--bad); opacity: 0.6; }
 #calibrate:disabled { opacity: 0.5; cursor: default; }
+
+/* Lessons */
+.beta { font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; padding: 1px 5px; border-radius: 4px; background: var(--surface-2); color: var(--muted); border: 1px solid var(--border); margin-left: 4px; }
+.lesson-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px; }
+.lesson-controls { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; }
+.lesson-harp { color: var(--accent); }
+.lesson-licks { margin: 8px 0 0; padding-left: 20px; columns: 2; font-size: 13px; }
+@media (max-width: 640px) { .lesson-licks { columns: 1; } }
+.lesson-mode .transcribe-only { display: none; }
+.line-chords { font: 700 12px system-ui, sans-serif; color: var(--muted); min-width: 3.5em; }
 
 .lower { display: grid; grid-template-columns: 1fr 280px; gap: 12px; }
 @media (max-width: 760px) { .legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 13px; margin-top: -4px; }

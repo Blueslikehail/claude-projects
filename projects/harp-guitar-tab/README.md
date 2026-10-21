@@ -1,11 +1,14 @@
 # harp-guitar-tab
 
-Learn blues harmonica and guitar solos: turn audio into playable tab in the browser.
+Learn blues harmonica (guitar later) in the browser: **generated lessons with exact tab**
+— a 12-bar blues at your level, with chords and a band — plus a live mic tab, play-along
+scoring, and (beta) transcription of solo recordings. Static site on Cloudflare; nothing
+is uploaded.
 
-The goal is a web app (static site on Cloudflare Pages) where you load an audio or video
-file of a solo, and it plays back with harmonica or guitar tab scrolling in sync, with
-A–B looping, slow-down, and a live microphone mode for playing along. All analysis runs
-in the browser; your audio is never uploaded.
+**Lessons first.** Transcribing real recordings proved unreliable whenever the harmonica
+isn't clearly isolated, so the main path now goes the other way: score first, audio
+second. A lesson is generated as tab and chords, and its audio is rendered from that same
+score, so the tab is always right. Transcription stays as a beta feature.
 
 ## Status
 
@@ -70,7 +73,23 @@ dependencies, so the same code will run in the web app:
   = E, `-(2 3 4 5)` = E7) on the roll, in the tab and in the note panel.
 - "Shift" in the note panel moves a whole chord.
 
-Roadmap: 6 guitar · 7 instrument separation.
+**Lessons (done).** `src/core/lesson/`, `src/core/audio/band.js`, `web/lesson.js`:
+
+- **🎵 New lesson:** pick the song key (the cross harp is chosen for you — E → A harp),
+  level (Beginner, Bends, Advanced, Overblows), tempo and length (12/24/36 bars).
+- A library of 2nd-position licks written as harp tab with shuffle rhythm (harp tab is
+  key-independent, so every lick works on all 12 harps). Each lick's level comes from its
+  techniques. Licks are picked per section of the 12-bar form (I, IV, V–IV, turnaround,
+  ending), mostly at your level, without repeats; a seed reproduces a lesson.
+- A band rendered from the chord track: shuffle bass (root-3-5-6-♭7), off-beat chord
+  stabs and a shuffle kit. **With harp / Backing only** switches mixes — play the part
+  yourself over the band, with the mic scoring you.
+- The hole roll gets a chord lane; tab lines are two bars each with their chords;
+  everything else (loops, speed, play-along, Copy tab) works on lessons too.
+- CLI: `npm start -- lesson --song E --level 2 --tempo 80 lesson.wav`.
+
+Roadmap: richer sound (sampled instruments) · more licks and forms (quick change, slow
+blues, minor) · LLM-written licks via a Worker · 6 guitar · 7 instrument separation.
 5 chord detection / polyphonic (basic-pitch) · 6 guitar · 7 instrument separation.
 Every stage is a swappable module, so separation or URL import can later run on a server.
 
@@ -134,6 +153,7 @@ npm start -- chord E7                             # which harps have an E7, and 
 npm start -- name G3 B3 D4 F4                     # -> G7
 npm start -- parse --harp C "-3'' 6↑ -(1 2 3)"    # tab -> notes
 npm start -- render --harp A --bpm 120 "-2 -3↓ 4 -3~-3↓↓" riff.wav   # tab -> audio
+npm start -- lesson --song E --level 2 --tempo 80 lesson.wav  # generated lesson + band
 npm start -- transcribe riff.wav --song E         # audio -> tab, picks the harp
 npm start -- transcribe solo.wav --harp A --notes # one line per note with its time
 ```
@@ -196,3 +216,12 @@ npm test
   (`(1 _ _ 4)` comes out as `1`). False chords would be worse than missed octaves, so
   0.7 it is. The live mic is still single-note; chords in play-along count as hit when
   you play any of their notes.
+- **Lessons:** after real-world tests showed transcription failing when the harmonica
+  isn't isolated, the app turned around: generate the music from a score, so tab and
+  chords are exact. AI audio generators (Suno etc.) were considered and rejected for this
+  — they output audio only, which puts you back to transcribing. The licks are standard
+  2nd-position blues vocabulary; every one is checked to be 2 bars and playable on all
+  12 harps, and every slot has licks at every level. Sound is synthesized (reed + breath
+  for the harp, simple bass/comp/drums) — functional rather than pretty; sampled
+  instruments are the obvious next step. Generation + rendering of both mixes takes
+  ~1.5 s in a worker.

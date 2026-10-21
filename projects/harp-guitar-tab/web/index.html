@@ -12,20 +12,23 @@
     <header class="bar">
       <h1>Harp Tab Player</h1>
       <div class="actions">
-        <label class="button primary">
-          Open audio / video
+        <button id="new-lesson" class="button primary">🎵 New lesson</button>
+        <button id="live" class="button" title="Show the tab of what you play (M)">🎤 Live tab</button>
+        <label class="button" title="Detect the notes in a recording of a solo harmonica. Works best when the harmonica plays alone.">
+          Transcribe a recording <span class="beta">beta</span>
           <input id="file" type="file" accept="audio/*,video/*" hidden />
         </label>
-        <button id="demo" class="button">Try a demo riff</button>
-        <button id="live" class="button" title="Show the tab of what you play (M)">🎤 Live tab</button>
       </div>
     </header>
 
     <main>
       <section id="empty" class="empty">
-        <p><strong>Drop an audio or video file of a harmonica solo here</strong>, or open one above.</p>
+        <p><strong>🎵 New lesson</strong> writes a 12-bar blues for you to learn: harmonica tab with the
+          chords, a band to play along with, at your level and tempo.</p>
+        <p class="muted"><strong>🎤 Live tab</strong> shows the holes you play as you play them.
+          <strong>Transcribe a recording</strong> (beta) tries to read a solo harmonica recording —
+          drop the file here.</p>
         <p class="muted">Everything runs in your browser — nothing is uploaded.</p>
-        <p class="muted">Or just play: <strong>🎤 Live tab</strong> shows the holes you play as you play them.</p>
       </section>
 
       <section id="player" class="player" hidden>
@@ -33,15 +36,33 @@
           <video id="media" controls playsinline preload="auto"></video>
         </div>
 
+        <section id="lesson-card" class="lesson-card" hidden aria-label="Lesson settings">
+          <div class="lesson-controls">
+            <label>Song key <select id="lesson-key"></select></label>
+            <strong id="lesson-harp" class="lesson-harp"></strong>
+            <label>Level <select id="lesson-level"></select></label>
+            <label class="range">Tempo <input id="lesson-tempo" type="range" min="50" max="140" step="5" value="80" /> <output id="lesson-tempo-out">80 bpm</output></label>
+            <label>Length
+              <select id="lesson-choruses">
+                <option value="1">12 bars</option>
+                <option value="2">24 bars</option>
+                <option value="3">36 bars</option>
+              </select>
+            </label>
+            <button id="lesson-new" class="button primary">New licks</button>
+          </div>
+          <ol id="lesson-licks" class="lesson-licks"></ol>
+        </section>
+
         <div class="settings">
-          <label>Harp
+          <label class="transcribe-only">Harp
             <select id="harp"></select>
           </label>
-          <label>Song key
+          <label class="transcribe-only">Song key
             <select id="song"></select>
           </label>
-          <span id="position" class="muted"></span>
-          <label class="check"><input id="overbends" type="checkbox" checked /> Overbends</label>
+          <span id="position" class="muted transcribe-only"></span>
+          <label class="check transcribe-only"><input id="overbends" type="checkbox" checked /> Overbends</label>
           <div class="segmented" role="group" aria-label="Sound">
             <button id="src-original" class="seg on" aria-pressed="true">Recording</button>
             <button id="src-synth" class="seg" aria-pressed="false">Hear the tab</button>
@@ -123,7 +144,7 @@
         <div class="lower">
           <section class="tab-card">
             <div class="card-head">
-              <h2>Tab</h2>
+              <h2 id="tab-title">Tab</h2>
               <button id="copy" class="button small">Copy tab</button>
             </div>
             <div id="tab" class="tab"></div>
