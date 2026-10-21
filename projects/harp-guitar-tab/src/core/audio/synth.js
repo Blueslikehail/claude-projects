@@ -23,6 +23,7 @@ export function renderNotes(
     vibrato = 0, // semitones
     vibratoRate = 5.5,
     noise = 0, // white-noise amplitude, deterministic
+    breath = 0, // breathy air that follows the note's loudness
     tail = 0.1,
   } = {},
 ) {
@@ -69,6 +70,15 @@ export function renderNotes(
         if ((k + 1) * freq < sampleRate / 2) x += h * Math.sin((k + 1) * phase); // no aliasing
       });
       out[s] += (0.8 * amp[s] * x) / norm;
+    }
+  }
+  if (breath) {
+    let seed = 54321;
+    let low = 0;
+    for (let s = 0; s < length; s++) {
+      seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+      low += 0.25 * ((seed / 0x7fffffff) * 2 - 1 - low); // soft low-passed hiss
+      out[s] += breath * amp[s] * low;
     }
   }
   if (noise) {

@@ -117,7 +117,14 @@ label { display: inline-flex; align-items: center; gap: 6px; }
 .roll-wrap { display: flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; background: var(--surface); }
 .holes { width: 34px; flex: none; border-right: 1px solid var(--border); background: var(--surface-2); }
 .holes div { height: var(--row); font-size: 12px; text-align: center; line-height: var(--row); color: var(--muted); }
-.roll { position: relative; flex: 1; height: calc(var(--row) * 11); overflow: hidden; cursor: pointer; }
+.roll { position: relative; flex: 1; height: calc(var(--row) * 12); overflow: hidden; cursor: pointer; }
+.holes .chord-head { background: var(--surface); }
+.bar-chord {
+  position: absolute; top: 0; height: var(--row); box-sizing: border-box; padding: 0 6px;
+  border-left: 2px solid var(--muted); font: 700 12px/var(--row) system-ui, sans-serif; color: var(--text);
+  background: var(--surface-2); pointer-events: none; white-space: nowrap; overflow: hidden;
+}
+.bar-chord.away { color: var(--accent); }
 .roll::before {
   content: ""; position: absolute; inset: 0; pointer-events: none;
   background: repeating-linear-gradient(to bottom, transparent 0 calc(var(--row) - 1px), var(--border) calc(var(--row) - 1px) var(--row));
@@ -137,7 +144,9 @@ label { display: inline-flex; align-items: center; gap: 6px; }
 .note.draw { background: var(--draw); }
 .note.bend { background: var(--bend); }
 .note.over { background: var(--over); }
-.note.chord { background: var(--chord); }
+.note.chord { background: var(--chord); align-items: flex-start; padding-top: 3px; }
+.note .chord-name { margin-left: 6px; font-weight: 700; opacity: 0.85; }
+.tok sup { font-size: 11px; margin-left: 2px; color: var(--muted); font-family: system-ui, sans-serif; }
 .note.bad { background: var(--bad); }
 .note.glide { border-top-left-radius: 0; border-bottom-left-radius: 0; box-shadow: inset 3px 0 0 rgba(255, 255, 255, 0.5); }
 .note.now { outline: 3px solid var(--now); z-index: 2; }
@@ -151,10 +160,97 @@ label { display: inline-flex; align-items: center; gap: 6px; }
 .legend span { display: inline-flex; align-items: center; gap: 5px; }
 .legend i.note { position: static; display: inline-block; width: 14px; min-width: 14px; height: 12px; margin: 0; padding: 0; border-radius: 3px; }
 
+/* Practice */
+.practice-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px; }
+.practice-grid { display: grid; grid-template-columns: 220px 1fr; gap: 16px; align-items: start; }
+@media (max-width: 640px) { .practice-grid { grid-template-columns: 1fr; } }
+.live { text-align: center; padding: 8px; border-radius: 10px; background: var(--surface-2); }
+.live-token { font: 700 44px/1.1 ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--accent); min-height: 50px; }
+.meter, .level { position: relative; height: 8px; border-radius: 4px; background: var(--border); margin: 8px 4px 0; overflow: hidden; }
+.meter::after { content: ""; position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; background: var(--muted); }
+.meter i { position: absolute; top: 0; bottom: 0; width: 6px; margin-left: -3px; background: var(--accent); border-radius: 3px; }
+.level i { display: block; height: 100%; width: 0; background: var(--chord); }
+.practice-side { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.practice-controls { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; }
+.free-out { min-height: 2em; line-height: 1.8; }
+.live-next { margin-top: 8px; font-size: 14px; }
+.live-next b { font: 700 18px ui-monospace, SFMono-Regular, Menlo, monospace; }
+.row-actions { display: flex; gap: 8px; }
+.pass-score { font-weight: 600; }
+.pass-history { margin: 4px 0 8px; padding-left: 20px; font-size: 13px; color: var(--muted); }
+.small { font-size: 13px; }
+.no-media .media-wrap, .no-media .transport, .no-media .roll-wrap, .no-media .legend, .no-media .lower, .no-media .settings .segmented, .no-media .needs-media { display: none; }
+.played { position: absolute; height: 5px; width: 6px; border-radius: 3px; background: var(--text); opacity: 0.55; pointer-events: none; z-index: 4; }
+.note.hit { box-shadow: 0 0 0 3px #16a34a; }
+.note.wrong { box-shadow: 0 0 0 3px #d97706; }
+.note.miss { box-shadow: 0 0 0 3px var(--bad); opacity: 0.6; }
+#calibrate:disabled { opacity: 0.5; cursor: default; }
+
+/* Lessons */
+.beta { font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; padding: 1px 5px; border-radius: 4px; background: var(--surface-2); color: var(--muted); border: 1px solid var(--border); margin-left: 4px; }
+.lesson-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px; }
+.lesson-controls { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; }
+.lesson-harp { color: var(--accent); }
+.lesson-blurb { margin: 8px 0 0; }
+.song-summary { margin: 0 0 8px; }
+.warn { display: block; margin-top: 4px; color: #b45309; }
+.lesson-licks { margin: 8px 0 0; padding-left: 20px; columns: 2; font-size: 13px; }
+@media (max-width: 640px) { .lesson-licks { columns: 1; } }
+.lesson-mode .transcribe-only { display: none; }
+.lesson-extras { display: grid; gap: 12px; }
+.lesson-extras h3 { font-size: 15px; margin: 0 0 4px; }
+.song-list { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
+@media (max-width: 400px) { .song-list { grid-template-columns: 1fr; } }
+.song { border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; background: var(--bg); min-width: 0; }
+.song-actions { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 6px; }
+.song-actions a.button { text-decoration: none; }
+.conf { font-size: 11px; padding: 0 6px; border-radius: 4px; border: 1px solid var(--border); white-space: nowrap; }
+.conf.documented { color: #15803d; border-color: #15803d; }
+.conf.reported { color: var(--muted); }
+.conf.partial, .conf.disputed { color: #b45309; border-color: #b45309; }
+.sources { font-size: 12px; }
+.sources summary { cursor: pointer; color: var(--muted); }
+.sources a { margin-right: 8px; color: var(--blow); overflow-wrap: anywhere; }
+.my-licks summary { cursor: pointer; font-weight: 600; }
+.lick-form { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.lick-form input, .lick-form select { font: inherit; padding: 4px 6px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface); color: var(--text); min-width: 0; }
+.lick-form .lick-tab { flex: 1 1 260px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.lick-msg-error { color: var(--bad) !important; }
+.my-lick-list { list-style: none; padding: 0; margin: 8px 0; display: grid; gap: 4px; font-size: 13px; }
+.my-lick-list code { font-size: 13px; }
+.mine-badge { color: var(--accent); font-weight: 600; }
+.line-chords { font: 700 12px system-ui, sans-serif; color: var(--muted); min-width: 3.5em; }
+
 .lower { display: grid; grid-template-columns: 1fr 280px; gap: 12px; }
 @media (max-width: 760px) { .legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 13px; margin-top: -4px; }
 .legend span { display: inline-flex; align-items: center; gap: 5px; }
 .legend i.note { position: static; display: inline-block; width: 14px; min-width: 14px; height: 12px; margin: 0; padding: 0; border-radius: 3px; }
+
+/* Practice */
+.practice-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px; }
+.practice-grid { display: grid; grid-template-columns: 220px 1fr; gap: 16px; align-items: start; }
+@media (max-width: 640px) { .practice-grid { grid-template-columns: 1fr; } }
+.live { text-align: center; padding: 8px; border-radius: 10px; background: var(--surface-2); }
+.live-token { font: 700 44px/1.1 ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--accent); min-height: 50px; }
+.meter, .level { position: relative; height: 8px; border-radius: 4px; background: var(--border); margin: 8px 4px 0; overflow: hidden; }
+.meter::after { content: ""; position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; background: var(--muted); }
+.meter i { position: absolute; top: 0; bottom: 0; width: 6px; margin-left: -3px; background: var(--accent); border-radius: 3px; }
+.level i { display: block; height: 100%; width: 0; background: var(--chord); }
+.practice-side { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.practice-controls { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; }
+.free-out { min-height: 2em; line-height: 1.8; }
+.live-next { margin-top: 8px; font-size: 14px; }
+.live-next b { font: 700 18px ui-monospace, SFMono-Regular, Menlo, monospace; }
+.row-actions { display: flex; gap: 8px; }
+.pass-score { font-weight: 600; }
+.pass-history { margin: 4px 0 8px; padding-left: 20px; font-size: 13px; color: var(--muted); }
+.small { font-size: 13px; }
+.no-media .media-wrap, .no-media .transport, .no-media .roll-wrap, .no-media .legend, .no-media .lower, .no-media .settings .segmented, .no-media .needs-media { display: none; }
+.played { position: absolute; height: 5px; width: 6px; border-radius: 3px; background: var(--text); opacity: 0.55; pointer-events: none; z-index: 4; }
+.note.hit { box-shadow: 0 0 0 3px #16a34a; }
+.note.wrong { box-shadow: 0 0 0 3px #d97706; }
+.note.miss { box-shadow: 0 0 0 3px var(--bad); opacity: 0.6; }
+#calibrate:disabled { opacity: 0.5; cursor: default; }
 
 .lower { grid-template-columns: 1fr; } }
 .tab-card, .note-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px; }

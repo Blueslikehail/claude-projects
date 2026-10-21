@@ -7,10 +7,12 @@
 import {
   HARP_KEYS,
   actionsForMidi,
+  chordShapes,
   chordShapesForMidis,
   createHarp,
   positionOf,
 } from "./harmonica.js";
+import { identifyChord } from "./chords.js";
 import { noteName } from "./pitch.js";
 
 /** Ways to play one event, each with an intrinsic cost and a mouth position (hole). */
@@ -25,13 +27,41 @@ export function candidates(harp, rawPitches) {
       center: a.hole,
     }));
   }
-  return chordShapesForMidis(harp, pitches).map((s) => ({
+  const exact = chordShapesForMidis(harp, pitches).map((s) => shapeCandidate(s, s.cost));
+  return exact.length ? exact : nearChordShapes(harp, pitches);
+}
+
+function shapeCandidate(s, cost, approx = false) {
+  const [named] = identifyChord(s.midis);
+  return {
     token: s.token,
     holes: s.holes,
     breath: s.breath,
-    cost: s.cost,
+    midis: s.midis,
+    chord: named && named.score >= 0.75 ? named.name : undefined,
+    cost,
+    approx,
     center: (s.holes[0] + s.holes.at(-1)) / 2,
-  }));
+  };
+}
+
+/**
+ * Detected chords can miss or add a note (octaves especially). If no shape matches
+ * exactly, offer shapes that share all but one of the notes, costed by the difference.
+ */
+export function nearChordShapes(harp, pitches, { limit = 3 } = {}) {
+  const want = new Set(pitches);
+  return chordShapes(harp)
+    .map((s) => {
+      const common = s.midis.filter((m) => want.has(m)).length;
+      const missing = want.size - common;
+      const extra = s.midis.length - common;
+      return { s, common, missing, extra };
+    })
+    .filter(({ common, missing }) => common >= 2 && missing <= 1)
+    .map(({ s, missing, extra }) => shapeCandidate(s, s.cost + 1 + 0.8 * missing + 0.5 * extra, true))
+    .sort((a, b) => a.cost - b.cost)
+    .slice(0, limit);
 }
 
 function unplayableToken(pitches) {

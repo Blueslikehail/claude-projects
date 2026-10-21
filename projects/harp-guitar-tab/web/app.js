@@ -1,9 +1,11 @@
-// Harp Tab Player: load a recording, transcribe it in a worker, practise with synced tab.
+// Harp Tab Player: generated blues lessons with exact tab, or (beta) transcription of a
+// recording; practise either with synced tab, loops, slow-down and the mic.
 import {
   HARP_KEYS,
   activeNoteIndex,
   applyNoteEdits,
   applyTokenEdits,
+  barPhrases,
   candidates,
   createHarp,
   encodeWav,
@@ -13,12 +15,14 @@ import {
   mapToHarp,
   noteIndexAt,
   noteName,
-  parseHarpTab,
   phrases,
   positionOf,
   renderNotes,
   suggestHarps,
 } from "./core/index.js";
+import { createLessons } from "./lesson.js";
+import { createSongs } from "./song.js";
+import { createPractice } from "./practice.js";
 
 const ANALYSIS_RATE = 22050;
 const $ = (id) => document.getElementById(id);
@@ -44,6 +48,8 @@ const state = {
   source: "original",
   originalUrl: null,
   synthUrl: null,
+  lesson: null, // a generated lesson, or null for a transcribed recording
+  backingUrl: null,
   current: -1,
 };
 
@@ -57,11 +63,61 @@ function fillSelects() {
   $("song").innerHTML =
     `<option value="">—</option>` + HARP_KEYS.map((k) => `<option>${k}</option>`).join("");
   $("holes").innerHTML =
-    Array.from({ length: 10 }, (_, i) => `<div>${10 - i}</div>`).join("") + `<div title="Not playable">?</div>`;
+    `<div class="chord-head" title="Chords">♪</div>` +
+    Array.from({ length: 10 }, (_, i) => `<div>${10 - i}</div>`).join("") +
+    `<div title="Not playable">?</div>`;
 }
 
 function status(html) {
   $("status").innerHTML = html;
+}
+
+function showPlayer() {
+  $("empty").hidden = true;
+  $("player").hidden = false;
+  $("player").classList.toggle("no-media", !state.originalUrl);
+  $("player").classList.toggle("lesson-mode", Boolean(state.lesson));
+  const [a, b] = state.sourceLabels ?? (state.lesson ? ["With harp", "Backing only"] : ["Recording", "Hear the tab"]);
+  $("src-original").textContent = a;
+  $("src-synth").textContent = b;
+}
+
+function blobUrl(bytes) {
+  return URL.createObjectURL(new Blob([bytes], { type: "audio/wav" }));
+}
+
+/** Show a generated lesson: exact tab (tokens pinned as written), chords, two mixes. */
+/**
+ * Show a lesson: exact tab (tokens pinned as written), chords, and two sounds to switch
+ * between. `first`/`second` are WAV bytes or ready-made URLs (e.g. the user's recording).
+ * options: labels for the two sounds, status text, keepTime (stay at the same spot).
+ */
+function loadLesson(lesson, first, second, { labels, message, keepTime = false } = {}) {
+  worker?.terminate();
+  const urlOf = (x) => (typeof x === "string" ? x : blobUrl(x));
+  const [firstUrl, secondUrl] = [urlOf(first), urlOf(second)];
+  for (const [old, now] of [[state.originalUrl, firstUrl], [state.backingUrl, secondUrl]]) {
+    if (old && old !== now && old !== firstUrl && old !== secondUrl) URL.revokeObjectURL(old);
+  }
+  state.lesson = lesson;
+  state.sourceLabels = labels;
+  state.fileName = lesson.title;
+  state.originalUrl = firstUrl;
+  state.backingUrl = secondUrl;
+  dropSynth();
+  if (!keepTime) media.pause();
+  resetEdits();
+  state.notes = lesson.events.map((e, id) => ({ ...e, id }));
+  for (const n of state.notes) state.tokenEdits.set(n.id, n.token);
+  state.harpChoice = lesson.harpKey;
+  state.songKey = lesson.songKey;
+  $("harp").value = lesson.harpKey;
+  $("song").value = lesson.songKey;
+  setSource(state.source === "synth" ? "synth" : "original", { keepTime });
+  showPlayer();
+  remap();
+  $("tab-title").textContent = lesson.title;
+  status(message ?? `${lesson.title} · ${lesson.tempo} bpm. Press play, loop a line with ⟲, or switch to <b>Backing only</b> and play it yourself.`);
 }
 
 // ---------- loading & analysis ----------
@@ -80,14 +136,19 @@ async function decodeToMono(arrayBuffer) {
 let worker = null;
 
 async function loadFile(file) {
+  state.lesson = null;
+  state.sourceLabels = null;
+  $("song-card").hidden = true;
+  $("lesson-card").hidden = true;
+  $("lesson-extras").hidden = true;
+  $("tab-title").textContent = "Tab";
   state.fileName = file.name;
   if (state.originalUrl) URL.revokeObjectURL(state.originalUrl);
   state.originalUrl = URL.createObjectURL(file);
   dropSynth();
   media.pause();
   setSource("original", { keepTime: false });
-  $("empty").hidden = true;
-  $("player").hidden = false;
+  showPlayer();
   resetEdits();
   state.notes = [];
   remap();
@@ -154,7 +215,7 @@ function remap() {
   const mapped = mapToHarp(notes, harp).events;
   state.harp = harp;
   state.events = applyTokenEdits(mapped, state.tokenEdits, (e) => candidates(harp, e.pitches));
-  state.lines = phrases(state.events);
+  state.lines = state.lesson ? barPhrases(state.events, state.lesson.chordTrack) : phrases(state.events);
   state.current = -1;
   dropSynth();
   if (state.source === "synth") setSource("synth");
@@ -162,6 +223,7 @@ function remap() {
   renderRoll();
   renderTab();
   renderNotePanel();
+  practice.harpChanged();
 }
 
 function updatePosition() {
@@ -187,7 +249,7 @@ const kindOf = (e) => {
 // ---------- hole roll ----------
 
 const px = () => Number($("zoom").value);
-const rowOf = (hole) => 10 - hole; // hole 10 on top
+const rowOf = (hole) => 11 - hole; // row 0 = chord lane, then hole 10 down to 1; row 11 = not playable
 let noteEls = [];
 let tokEls = [];
 
@@ -200,8 +262,14 @@ function renderRoll() {
     el.className = `note ${kind}${e.glide ? " glide" : ""}`;
     el.dataset.i = i;
     el.textContent = e.token;
-    el.title = `${e.pitches.map(noteName).join(" ")} · ${e.time.toFixed(2)} s`;
-    let top = 10;
+    if (e.chord) {
+      const name = document.createElement("span");
+      name.className = "chord-name";
+      name.textContent = e.chord;
+      el.append(name);
+    }
+    el.title = `${e.chord ? `${e.chord} chord · ` : ""}${e.pitches.map(noteName).join(" ")} · ${e.time.toFixed(2)} s`;
+    let top = rowOf(0);
     let rows = 1;
     if (e.holes) {
       top = rowOf(e.holes.at(-1));
@@ -217,9 +285,19 @@ function renderRoll() {
     track.append(el);
     return el;
   });
+  for (const bar of state.lesson?.chordTrack ?? []) {
+    const el = document.createElement("div");
+    el.className = `bar-chord${bar.degree === "I" ? "" : " away"}`;
+    el.style.left = `${bar.time * px()}px`;
+    el.style.width = `${bar.duration * px()}px`;
+    el.textContent = bar.name;
+    el.title = `Bar ${bar.bar + 1}: ${bar.name} (${bar.degree})`;
+    track.append(el);
+  }
   const end = Math.max(media.duration || 0, ...state.events.map((e) => e.time + e.duration));
   track.style.width = `${end * px() + 400}px`;
   renderLoopZone();
+  practice.rollChanged();
 }
 
 function renderLoopZone() {
@@ -259,6 +337,13 @@ function renderTab() {
     loopBtn.title = "Loop this phrase";
     loopBtn.dataset.loopLine = li;
     row.append(loopBtn);
+    if (line.label) {
+      const label = document.createElement("span");
+      label.className = "line-chords";
+      label.textContent = line.label;
+      label.title = `Bar ${line.bar}`;
+      row.append(label);
+    }
     for (let i = line.first; i <= line.last; i++) {
       const e = state.events[i];
       const tok = document.createElement("span");
@@ -267,6 +352,12 @@ function renderTab() {
       if (e.id === state.selectedId) tok.classList.add("selected");
       tok.dataset.i = i;
       tok.textContent = e.token;
+      if (e.chord) {
+        const name = document.createElement("sup");
+        name.textContent = e.chord;
+        tok.append(name);
+        tok.title = `${e.chord} chord`;
+      }
       row.append(tok);
       tokEls[i] = tok;
     }
@@ -288,7 +379,9 @@ function renderNotePanel() {
   panel.innerHTML = `
     <h3>${escapeHtml(e.token)}</h3>
     <dl>
-      <dt>Note</dt><dd>${e.pitches.map(noteName).join(" ")}</dd>
+      ${e.chord ? `<dt>Chord</dt><dd>${escapeHtml(e.chord)}${e.midis ? ` · ${e.midis.map(noteName).join(" ")}` : ""}</dd>` : ""}
+      ${!e.midis || e.approx ? `<dt>${e.pitches.length > 1 ? "Heard" : "Note"}</dt><dd>${e.pitches.map(noteName).join(" ")}</dd>` : ""}
+      ${e.approx ? `<dt></dt><dd class="muted">No harp chord has exactly these notes; this is the closest.</dd>` : ""}
       <dt>Time</dt><dd>${e.time.toFixed(2)} s · ${Math.round(e.duration * 1000)} ms</dd>
       ${e.cents != null ? `<dt>Intonation</dt><dd>${e.cents > 0 ? "+" : ""}${e.cents} cents</dd>` : ""}
       ${e.glide ? `<dt>Played</dt><dd>slid into from the previous note</dd>` : ""}
@@ -296,7 +389,7 @@ function renderNotePanel() {
     ${alts.length > 1 ? `<div class="muted">Play it as</div><div class="row">${alts
       .map((a) => `<button class="button small ${a.token === e.token ? "on" : ""}" data-alt="${escapeHtml(a.token)}">${escapeHtml(a.token)}</button>`)
       .join("")}</div>` : ""}
-    <div class="muted">Wrong note?</div>
+    <div class="muted">${e.pitches.length > 1 ? "Shift the chord" : "Wrong note?"}</div>
     <div class="row">
       <button class="button small" data-shift="-12">−8va</button>
       <button class="button small" data-shift="-1">−1</button>
@@ -327,8 +420,7 @@ $("note-panel").addEventListener("click", (ev) => {
   if (btn.dataset.alt) {
     state.tokenEdits.set(id, btn.dataset.alt);
   } else if (btn.dataset.shift) {
-    const base = state.pitchEdits.get(id) ?? state.notes.find((n) => n.id === id).pitches[0];
-    state.pitchEdits.set(id, base + Number(btn.dataset.shift));
+    state.pitchEdits.set(id, (state.pitchEdits.get(id) ?? 0) + Number(btn.dataset.shift));
     state.tokenEdits.delete(id);
   } else if ("delete" in btn.dataset) {
     state.deleted.add(id);
@@ -350,7 +442,9 @@ function setSource(source, { keepTime = true } = {}) {
   $("src-original").setAttribute("aria-pressed", source === "original");
   $("src-synth").setAttribute("aria-pressed", source === "synth");
   let url = state.originalUrl;
-  if (source === "synth") {
+  if (source === "synth" && state.lesson) {
+    url = state.backingUrl;
+  } else if (source === "synth") {
     if (!state.synthUrl) {
       const notes = state.events.filter((e) => e.playable);
       const wav = encodeWav(renderNotes(notes, { sampleRate: ANALYSIS_RATE }), ANALYSIS_RATE);
@@ -412,6 +506,7 @@ function stepNote(dir) {
 
 function tick() {
   const t = media.currentTime;
+  practice.tick(t);
   if (state.loop && !media.paused && (t >= state.loop.b || t < state.loop.a - 0.5)) {
     media.currentTime = state.loop.a;
   }
@@ -447,30 +542,6 @@ $("file").addEventListener("change", (ev) => {
   const [file] = ev.target.files;
   if (file) loadFile(file);
   ev.target.value = "";
-});
-
-$("demo").addEventListener("click", () => {
-  // A 2nd-position blues lick in E on an A harp, with a slide into a bend.
-  const harp = createHarp("A");
-  const phrasesTab = [
-    "-2 -3↓ -3 -4 -4↓ 4 -3~-3↓↓ -2",
-    "-2 -2 -3↓ 4 -4↓ -4 -5 6",
-    "6 -5 -4 -4↓ 4 -3↓ -2",
-  ];
-  const notes = [];
-  let t = 0.3;
-  for (const line of phrasesTab) {
-    for (const e of parseHarpTab(line, harp)) {
-      if (e.glide) notes.at(-1).duration = t - notes.at(-1).time; // hold into the slide
-      notes.push({ ...e, time: t, duration: e.glide ? 0.45 : 0.27 });
-      t += e.glide ? 0.5 : 0.3;
-    }
-    t += 0.9;
-  }
-  const wav = encodeWav(renderNotes(notes, { sampleRate: 44100, vibrato: 0.1, noise: 0.01 }), 44100);
-  loadFile(new File([wav], "demo-riff.wav", { type: "audio/wav" }));
-  state.songKey = "E";
-  $("song").value = "E";
 });
 
 $("harp").addEventListener("change", (ev) => {
@@ -538,7 +609,20 @@ $("copy").addEventListener("click", async () => {
     `${state.fileName} — ${state.harp.key} harp`,
     state.songKey ? `${ordinal(positionOf(state.harp.key, state.songKey))} position, song in ${state.songKey}` : "",
   ].filter(Boolean);
-  const text = `${head.join(", ")}\n\n${formatHarpTab(state.events)}\n`;
+  const body = state.lesson
+    ? state.lines
+        .map((l) => {
+          const toks = [];
+          for (let i = l.first; i <= l.last; i++) {
+            const e = state.events[i];
+            if (e.glide && toks.length) toks[toks.length - 1] += `~${e.token}`;
+            else toks.push(e.token);
+          }
+          return `${String(l.bar).padStart(2)} | ${l.label.padEnd(6)} | ${toks.join(" ")}`;
+        })
+        .join("\n")
+    : formatHarpTab(state.events);
+  const text = `${head.join(", ")}\n\n${body}\n`;
   try {
     await navigator.clipboard.writeText(text);
     status("Tab copied.");
@@ -559,9 +643,10 @@ document.addEventListener("keydown", (ev) => {
     ArrowRight: () => (media.currentTime += 2),
     ",": () => stepNote(-1),
     ".": () => stepNote(1),
+    m: () => practice.toggle(),
   };
   const action = actions[ev.key];
-  if (action && state.events.length + state.notes.length > 0) {
+  if (action && (ev.key === "m" || state.events.length + state.notes.length > 0)) {
     ev.preventDefault();
     action();
   }
@@ -586,5 +671,42 @@ function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 }
 
+const lessons = createLessons({ loadLesson, status });
+$("new-lesson").addEventListener("click", () => {
+  $("song-card").hidden = true;
+  $("lesson-card").hidden = false;
+  $("lesson-extras").hidden = false;
+  lessons.generate();
+});
+
+createSongs({
+  loadLesson,
+  status,
+  decodeToMono,
+  media,
+  showCards: () => {
+    $("lesson-card").hidden = true;
+    $("lesson-extras").hidden = true;
+    $("song-card").hidden = false;
+  },
+});
+
+$("live").addEventListener("click", () => {
+  showPlayer();
+  practice.start();
+});
+
+const practice = createPractice({
+  media,
+  harp: () => state.harp,
+  events: () => state.events,
+  noteEls: () => noteEls,
+  track: $("track"),
+  px,
+  rowOf,
+  status,
+});
+
 fillSelects();
+remap();
 requestAnimationFrame(tick);

@@ -17,6 +17,10 @@ import {
   parseNote,
   pitchClassName,
   positionOf,
+  generateLesson,
+  lessonTabLines,
+  LEVELS,
+  renderLesson,
   renderNotes,
   suggestHarps,
   transcribe,
@@ -32,12 +36,15 @@ export const USAGE = `harp-guitar-tab — harmonica tab tools
   parse    [--harp C] "<tab>"            tab -> notes
   transcribe <file.wav> [--harp A | --song E] [--notes]   recording -> tab
   render   [--harp C] [--bpm 100] "<tab>" <out.wav>       tab -> audio
+  lesson   [--style shuffle] [--song E] [--level 1-4] [--tempo] [--choruses 1] [--seed 1] [out.wav]
+           styles: shuffle, slow, boogie, swamp, minor, reed (Jimmy Reed, 1st position)
+           a generated 12-bar blues lesson: tab with chords, and audio with a band
 
 Tab: 4 blow, -4 draw, -3↓ bend (one arrow = one semitone), 6↑ overblow, -(1 2 3) chord,
      -3~-3↓↓ slide into a bend on the same hole.
 Example: npm start -- tab --harp A E4 G4 A4 Bb4 B4 D5 E5`;
 
-const BOOLEAN_FLAGS = ["--octaves", "--notes"];
+const BOOLEAN_FLAGS = ["--octaves", "--notes", "--no-backing"];
 
 function parseArgs(argv) {
   const opts = {};
@@ -149,7 +156,8 @@ export function run(argv) {
       const mapped = mapToHarp(notes, target).events;
       if (opts.notes) {
         for (const e of mapped) {
-          lines.push(`${e.time.toFixed(2).padStart(7)}s  ${noteName(e.pitches[0]).padEnd(4)} ${e.token}`);
+          const heard = e.pitches.map(noteName).join(" ");
+          lines.push(`${e.time.toFixed(2).padStart(7)}s  ${heard.padEnd(4)} ${e.token}${e.chord ? `  (${e.chord})` : ""}`);
         }
       } else {
         lines.push(formatHarpTab(mapped));
@@ -170,6 +178,25 @@ export function run(argv) {
       });
       writeFileSync(out, encodeWav(renderNotes(notes, { sampleRate }), sampleRate));
       return `Wrote ${out} (${notes.length} notes, ${time.toFixed(1)}s)`;
+    }
+
+    case "lesson": {
+      const lesson = generateLesson({
+        songKey: opts.song ?? "E",
+        style: opts.style ?? "shuffle",
+        level: Number(opts.level ?? 2),
+        tempo: opts.tempo ? Number(opts.tempo) : undefined,
+        choruses: Number(opts.choruses ?? 1),
+        seed: Number(opts.seed ?? 1),
+      });
+      const lines = [`${lesson.title} · ${LEVELS[lesson.level]} · ${lesson.tempo} bpm`, ""];
+      for (const l of lessonTabLines(lesson)) lines.push(`${String(l.bar).padStart(3)}  ${l.chords.padEnd(8)} ${l.tab}`);
+      if (rest[0]) {
+        const sampleRate = 32000;
+        writeFileSync(rest[0], encodeWav(renderLesson(lesson, { sampleRate, backing: !opts["no-backing"] }), sampleRate));
+        lines.push("", `Wrote ${rest[0]} (${lesson.duration.toFixed(1)} s)`);
+      }
+      return lines.join("\n");
     }
 
     default:

@@ -50,12 +50,15 @@ export function makeLoop(a, b, duration, { min = 0.2 } = {}) {
 
 /**
  * Apply the user's edits to transcribed notes before mapping:
- * `deleted` is a Set of note ids, `pitchEdits` maps id -> MIDI pitch.
+ * `deleted` is a Set of note ids, `pitchEdits` maps id -> semitone shift (whole chords move).
  */
 export function applyNoteEdits(notes, { deleted = new Set(), pitchEdits = new Map() } = {}) {
   return notes
     .filter((n) => !deleted.has(n.id))
-    .map((n) => (pitchEdits.has(n.id) ? { ...n, pitches: [pitchEdits.get(n.id)] } : n));
+    .map((n) => {
+      const shift = pitchEdits.get(n.id);
+      return shift ? { ...n, pitches: n.pitches.map((p) => p + shift) } : n;
+    });
 }
 
 /**
@@ -69,4 +72,23 @@ export function applyTokenEdits(events, tokenEdits, candidatesFor) {
     const alt = candidatesFor(e).find((c) => c.token === want);
     return alt ? { ...e, ...alt } : e;
   });
+}
+
+/**
+ * Lines for a lesson's tab: `barsPerLine` bars each, labelled with their chords
+ * (e.g. "B7 A7"). Same shape as phrases(); lines without notes are left out.
+ */
+export function barPhrases(events, chordTrack, { barsPerLine = 2 } = {}) {
+  const out = [];
+  for (let b = 0; b < chordTrack.length; b += barsPerLine) {
+    const bars = chordTrack.slice(b, b + barsPerLine);
+    const start = bars[0].time;
+    const end = bars.at(-1).time + bars.at(-1).duration;
+    const idx = [];
+    events.forEach((e, i) => e.time >= start - 1e-9 && e.time < end - 1e-9 && idx.push(i));
+    if (!idx.length) continue;
+    const names = bars.map((c) => c.name).filter((n, i, all) => i === 0 || n !== all[i - 1]);
+    out.push({ first: idx[0], last: idx.at(-1), start, end, bar: b + 1, label: names.join(" ") });
+  }
+  return out;
 }
