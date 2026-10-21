@@ -9,12 +9,14 @@ import {
   STYLE_IDS,
   article,
   createHarp,
+  encodeWav,
   harpForSong,
   lessonOptionsFor,
   listenLinks,
   suggestSongs,
   validateLick,
 } from "./core/index.js";
+import { SAMPLE_RATE, loadSamples, normalizeTogether, renderLessonSampled } from "./sampler.js";
 
 const $ = (id) => document.getElementById(id);
 const STORE = "harp-tab.myLicks";
@@ -39,19 +41,38 @@ export function createLessons(app) {
     return Math.floor(Math.random() * 1e9);
   }
 
+  let request = 0;
+  let sound = "samples";
+
   function generate() {
     worker?.terminate();
     worker = new Worker(new URL("./lesson-worker.js", import.meta.url), { type: "module" });
+    const id = ++request;
+    const opts = { ...options, myLicks: useMine ? mine : [] };
     app.status("Writing your lesson…");
-    worker.onmessage = ({ data }) => {
-      if (data.error) app.status(`Could not make the lesson: ${esc(data.error)}`);
-      else {
-        app.loadLesson(data.lesson, data.full, data.backing);
-        renderLicks(data.lesson);
-        renderSongs(data.lesson);
+    const show = (lesson, full, backing) => {
+      if (id !== request) return; // a newer lesson was asked for meanwhile
+      app.loadLesson(lesson, full, backing);
+      renderLicks(lesson);
+      renderSongs(lesson);
+    };
+    worker.onmessage = async ({ data }) => {
+      if (data.error) return app.status(`Could not make the lesson: ${esc(data.error)}`);
+      if (data.full) return show(data.lesson, data.full, data.backing);
+      try {
+        app.status("Recording the band…");
+        const samples = await loadSamples();
+        const mixes = normalizeTogether([
+          await renderLessonSampled(data.lesson, samples),
+          await renderLessonSampled(data.lesson, samples, { harp: false }),
+        ]);
+        show(data.lesson, ...mixes.map((m) => encodeWav(m, SAMPLE_RATE)));
+      } catch (err) {
+        console.warn("Samples unavailable, using the synthesizer:", err);
+        if (id === request) worker.postMessage({ options: opts, synth: true });
       }
     };
-    worker.postMessage({ ...options, myLicks: useMine ? mine : [] });
+    worker.postMessage({ options: opts, synth: sound === "synth" });
   }
 
   // ---------- lesson licks and songs ----------
@@ -229,6 +250,11 @@ export function createLessons(app) {
     $("lesson-tempo").value = options.tempo;
     $("lesson-tempo-out").textContent = `${options.tempo} bpm`;
   }
+
+  $("lesson-sound").addEventListener("change", (ev) => {
+    sound = ev.target.value;
+    generate();
+  });
 
   $("lesson-style").innerHTML = STYLE_IDS.map((id) => `<option value="${id}">${STYLES[id].name}</option>`).join("");
   $("lesson-style").addEventListener("change", (ev) => {

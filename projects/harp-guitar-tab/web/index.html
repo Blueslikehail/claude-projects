@@ -29,6 +29,8 @@
           <strong>Transcribe a recording</strong> (beta) tries to read a solo harmonica recording —
           drop the file here.</p>
         <p class="muted">Everything runs in your browser — nothing is uploaded.</p>
+        <p class="muted small">Instrument sounds: FluidR3_GM soundfont by Frank Wen, CC BY 3.0
+          (<a href="./samples/CREDITS.md">credits</a>).</p>
       </section>
 
       <section id="player" class="player" hidden>
@@ -48,6 +50,12 @@
                 <option value="1">12 bars</option>
                 <option value="2">24 bars</option>
                 <option value="3">36 bars</option>
+              </select>
+            </label>
+            <label>Sound
+              <select id="lesson-sound">
+                <option value="samples">Recorded instruments</option>
+                <option value="synth">Synth</option>
               </select>
             </label>
             <button id="lesson-new" class="button primary">New licks</button>

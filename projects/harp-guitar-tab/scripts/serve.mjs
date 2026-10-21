@@ -14,6 +14,8 @@ const TYPES = {
   ".json": "application/json",
   ".svg": "image/svg+xml",
   ".wav": "audio/wav",
+  ".mp3": "audio/mpeg",
+  ".md": "text/markdown; charset=utf-8",
 };
 
 /** Map a URL path to a file, refusing anything outside web/ and src/core/. */
