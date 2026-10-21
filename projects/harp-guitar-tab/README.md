@@ -195,7 +195,9 @@ there is no server code).
 | Build command | `npm run build` |
 | Deploy command | `npx wrangler deploy` |
 
-Builds run from the repo's production branch (Settings → Build → Branch control).
+Builds run from the repo's production branch (Settings → Build → Branch control). Other
+branches get preview builds, which run `npx wrangler preview`; that needs the (empty)
+`previews` block in `wrangler.jsonc`.
 The site is then at `https://harp-guitar-tab.<your-subdomain>.workers.dev`.
 
 **From your machine:** `npm run deploy` (build + `npx wrangler deploy`; asks you to log in once).
