@@ -200,6 +200,10 @@ branches get preview builds, which run `npx wrangler preview`; that needs the (e
 `previews` block in `wrangler.jsonc`.
 The site is then at `https://harp-guitar-tab.<your-subdomain>.workers.dev`.
 
+If the live site stays on old code while `https://<branch>-harp-guitar-tab.<your-subdomain>.workers.dev`
+has the new one, the production branch is set to some other branch: set it to `main`. To go live
+right away, deploy the newest version from the worker's **Deployments** page.
+
 **From your machine:** `npm run deploy` (build + `npx wrangler deploy`; asks you to log in once).
 
 ### Command line
