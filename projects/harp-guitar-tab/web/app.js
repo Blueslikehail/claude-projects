@@ -105,7 +105,7 @@ function loadLesson(lesson, fullWav, backingWav) {
   showPlayer();
   remap();
   $("tab-title").textContent = lesson.title;
-  status(`${lesson.title} · ${lesson.tempo} bpm shuffle. Press play, loop a line with ⟲, or switch to <b>Backing only</b> and play it yourself.`);
+  status(`${lesson.title} · ${lesson.tempo} bpm. Press play, loop a line with ⟲, or switch to <b>Backing only</b> and play it yourself.`);
 }
 
 // ---------- loading & analysis ----------

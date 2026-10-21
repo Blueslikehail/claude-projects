@@ -10,6 +10,7 @@
 
 import { harpKeyName, positionOf } from "./harmonica.js";
 import { parsePitchClass } from "./pitch.js";
+import { STYLES } from "./lesson/styles.js";
 
 export const SONGS = [
   {
@@ -113,14 +114,14 @@ export function tempoCategory(bpm) {
 
 /**
  * Rank songs for a lesson (or any practice setting).
- * @param {{ harpKey: string, position?: number, tempo?: number, feel?: string, form?: string }} session
+ * @param {{ harpKey: string, position?: number, tempo?: number, feel?: string|string[], form?: string }} session
  * @returns {{ song, score, reasons: string[], sameHarp: boolean }[]}
  */
 export function suggestSongs(session, { limit = 5 } = {}) {
   const harp = harpKeyName(session.harpKey);
   const position = session.position ?? 2;
   const tempo = session.tempo ? tempoCategory(session.tempo) : null;
-  const feel = session.feel ?? "shuffle";
+  const feels = [].concat(session.feel ?? "shuffle");
   const form = session.form ?? "12-bar";
   return SONGS.map((song) => {
     const reasons = [];
@@ -138,16 +139,17 @@ export function suggestSongs(session, { limit = 5 } = {}) {
       score += 1.5;
       reasons.push(`same ${harp} harp, but in ${ordinal(song.position)} position`);
     }
-    if (song.feel === feel) {
-      score += 1;
-      reasons.push(`${feel} feel`);
+    // Feel weighs more than the harp alone: a slow blues lesson should suggest slow blues.
+    if (feels.includes(song.feel)) {
+      score += 2.5;
+      reasons.push(`${song.feel} feel`);
     }
     if (tempo && song.tempo === tempo) {
       score += 1;
       reasons.push(`${tempo} tempo`);
     }
     if (song.form === form) {
-      score += 0.5;
+      score += form === "12-bar" ? 0.5 : 2; // a distinctive form (minor groove, 16-bar) is a strong match
       reasons.push(form);
     }
     score -= CONFIDENCE_PENALTY[song.confidence];
@@ -157,12 +159,22 @@ export function suggestSongs(session, { limit = 5 } = {}) {
     .slice(0, limit);
 }
 
-/** Lesson settings to practise for a song (lessons are 2nd position for now). */
+/** Which lesson style fits a song best. */
+export function styleFor(song) {
+  if (song.position === 1) return "reed";
+  if (song.form === "minor groove") return "minor";
+  return { slow: "slow", boogie: "boogie", rock: "boogie", groove: "swamp" }[song.feel] ?? "shuffle";
+}
+
+/** Lesson settings to practise for a song: its key, a fitting style and tempo. */
 export function lessonOptionsFor(song) {
-  if (song.position !== 2) return null;
+  const style = styleFor(song);
+  const { min, max } = STYLES[style].tempo;
+  const wanted = { slow: 65, medium: 90, fast: 130 }[song.tempo];
   return {
     songKey: song.songKey,
-    tempo: { slow: 65, medium: 90, fast: 130 }[song.tempo], // multiples of 5, like the tempo slider
+    style,
+    tempo: Math.round(Math.min(max, Math.max(min, wanted)) / 5) * 5, // multiples of 5, like the tempo slider
   };
 }
 

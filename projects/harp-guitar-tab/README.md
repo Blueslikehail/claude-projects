@@ -106,6 +106,25 @@ where it goes in the 12-bar). They're checked as playable, levelled, kept in thi
 browser (Export/Import as JSON to back up or move them), and used in your lessons
 most of the time, marked "★ yours · from Juke".
 
+**Styles (done).** `src/core/lesson/styles.js`. Lessons come in six styles on top of the
+level; each sets the position, rhythm feel, tempo range, chords and the band:
+
+| Style | Harp | Feel / tempo | Band | Licks |
+| --- | --- | --- | --- | --- |
+| Chicago shuffle | 2nd position | swung 8ths, 80–150 | walking bass, off-beat stabs | the core set |
+| Slow blues | 2nd position | 12/8, 50–75 | slow bass, held organ chords, triplet hats | long notes, wails, deep bends |
+| Boogie rock | 2nd position | straight 8ths, 110–160 | R-R-5-5-6-6-5-5 bass, backbeat | driving eighths, chord chugs |
+| Swamp groove | 2nd position | lazy, 75–100 | syncopated bass, rimshot | riffs with space, low chords |
+| Minor blues | 2nd position | straight, 70–110 | m7 chords, R-5-♭7 bass, pads | minor pentatonic, ♭3 = -3↓, -(4 5 6) on v |
+| Jimmy Reed | **1st position** (harp = song key) | lazy shuffle, 70–100 | boogie bass | high register, blow bends 8↓ 9↓ 10↓↓ |
+
+72 licks are tagged with the styles they suit (several fit more than one); every style has
+a beginner lick for every part of the form (tested). Song suggestions follow the style
+(slow → Blues with a Feeling, boogie → Whammer Jammer, swamp → Hoodoo Man Blues,
+minor → Help Me, Jimmy Reed → Bright Lights, Big City), and "… lesson in E" on a song picks
+the matching style. Your licks can be for any 2nd-position style or one style.
+CLI: `npm start -- lesson --style reed --song A lesson.wav`.
+
 Roadmap: load an original recording → key, tempo and changes → licks in sync with it ·
 richer sound (sampled instruments) · more licks and forms (quick change, slow
 blues, minor) · LLM-written licks via a Worker · 6 guitar · 7 instrument separation.
@@ -250,3 +269,8 @@ npm test
   tunes (I'm a King Bee, Whoopin' the Blues, Messin' with the Kid, Smokestack Lightnin')
   were left out because no source gave their key. Matching is by harp, position, feel,
   tempo and form — not note-for-note riff similarity, which would need the records' notes.
+- **Styles:** a style is mostly data (position, swing, chord quality, bass/comp/drum
+  patterns in beats) plus tags on the licks, so adding one is cheap. Minor licks avoid the
+  natural -3 (the major 3rd); a test checks no major 3rd sounds in a minor lesson. Song
+  matching first ranked by harp alone, which suggested Juke for a slow blues; feel now
+  weighs more than the harp, and distinctive forms (minor groove, 16-bar) count extra.

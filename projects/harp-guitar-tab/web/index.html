@@ -38,6 +38,7 @@
 
         <section id="lesson-card" class="lesson-card" hidden aria-label="Lesson settings">
           <div class="lesson-controls">
+            <label>Style <select id="lesson-style"></select></label>
             <label>Song key <select id="lesson-key"></select></label>
             <strong id="lesson-harp" class="lesson-harp"></strong>
             <label>Level <select id="lesson-level"></select></label>
@@ -51,27 +52,8 @@
             </label>
             <button id="lesson-new" class="button primary">New licks</button>
           </div>
+          <p id="lesson-blurb" class="muted small lesson-blurb"></p>
           <ol id="lesson-licks" class="lesson-licks"></ol>
-        </section>
-            <details id="my-licks" class="my-licks">
-              <summary>My licks (<span id="my-licks-count">0</span>) — add licks you learn from songs</summary>
-              <form id="lick-form" class="lick-form">
-                <input id="lick-name" placeholder="Name, e.g. Juke intro" required />
-                <input id="lick-song" placeholder="From song (optional)" />
-                <select id="lick-slot" aria-label="Where it goes in the 12-bar"></select>
-                <input id="lick-tab" class="lick-tab" placeholder="Tab: -2 -3↓ 4 -4   or with rhythm: -2:1 -3↓:1 -4:2" required />
-                <button class="button small primary">Add</button>
-              </form>
-              <p id="lick-msg" class="muted small">Rhythm in eighth notes after a colon (2 = a quarter, the default) ·
-                <code>~</code> slides into a bend · <code>r</code> is a rest · up to 2 bars.</p>
-              <label class="check small"><input id="use-my-licks" type="checkbox" checked /> Use my licks in lessons</label>
-              <ul id="my-lick-list" class="my-lick-list"></ul>
-              <div class="row-actions">
-                <button id="licks-export" type="button" class="button small">Export</button>
-                <label class="button small">Import <input id="licks-import" type="file" accept="application/json,.json" hidden /></label>
-              </div>
-            </details>
-          </div>
         </section>
 
         <div class="settings">
@@ -182,6 +164,27 @@
                 the label says how sure they are.</p>
               <ul id="song-list" class="song-list"></ul>
             </section>
+            <details id="my-licks" class="my-licks">
+              <summary>My licks (<span id="my-licks-count">0</span>) — add licks you learn from songs</summary>
+              <form id="lick-form" class="lick-form">
+                <input id="lick-name" placeholder="Name, e.g. Juke intro" required />
+                <input id="lick-song" placeholder="From song (optional)" />
+                <select id="lick-slot" aria-label="Where it goes in the 12-bar"></select>
+                <select id="lick-style" aria-label="Which lesson style it's for"></select>
+                <input id="lick-tab" class="lick-tab" placeholder="Tab: -2 -3↓ 4 -4   or with rhythm: -2:1 -3↓:1 -4:2" required />
+                <button class="button small primary">Add</button>
+              </form>
+              <p id="lick-msg" class="muted small">Rhythm in eighth notes after a colon (2 = a quarter, the default) ·
+                <code>~</code> slides into a bend · <code>r</code> is a rest · up to 2 bars.</p>
+              <label class="check small"><input id="use-my-licks" type="checkbox" checked /> Use my licks in lessons</label>
+              <ul id="my-lick-list" class="my-lick-list"></ul>
+              <div class="row-actions">
+                <button id="licks-export" type="button" class="button small">Export</button>
+                <label class="button small">Import <input id="licks-import" type="file" accept="application/json,.json" hidden /></label>
+              </div>
+            </details>
+          </div>
+        </section>
       </section>
     </main>
 

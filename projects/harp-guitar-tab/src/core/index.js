@@ -19,3 +19,4 @@ export * from "./audio/band.js";
 export * from "./lesson/licks.js";
 export * from "./lesson/generate.js";
 export * from "./songs.js";
+export * from "./lesson/styles.js";

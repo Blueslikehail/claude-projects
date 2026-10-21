@@ -38,7 +38,7 @@ export function renderDrums(hits, out, sampleRate, { gain = 0.5 } = {}) {
   const noise = () => ((seed = (seed * 16807) % 2147483647) / 2147483647) * 2 - 1;
   for (const hit of hits) {
     const start = Math.round(hit.time * sampleRate);
-    const len = { kick: 0.35, snare: 0.2, hat: 0.06, crash: 1.6 }[hit.kind];
+    const len = { kick: 0.35, snare: 0.2, rim: 0.05, hat: 0.06, crash: 1.6 }[hit.kind];
     const stop = Math.min(out.length, start + Math.round(len * sampleRate));
     let phase = 0;
     let prev = 0;
@@ -48,6 +48,9 @@ export function renderDrums(hits, out, sampleRate, { gain = 0.5 } = {}) {
       if (hit.kind === "kick") {
         phase += (2 * Math.PI * (50 + 70 * Math.exp(-t / 0.04))) / sampleRate;
         x = Math.sin(phase) * Math.exp(-t / 0.12);
+      } else if (hit.kind === "rim") {
+        phase += (2 * Math.PI * 1700) / sampleRate;
+        x = (0.5 * noise() + 0.5 * Math.sin(phase)) * Math.exp(-t / 0.012) * 0.5;
       } else if (hit.kind === "snare") {
         phase += (2 * Math.PI * 190) / sampleRate;
         x = (0.6 * noise() + 0.4 * Math.sin(phase)) * Math.exp(-t / 0.06) * 0.6;
@@ -72,6 +75,8 @@ export function renderLesson(lesson, { harp = true, backing = true, sampleRate =
   if (backing) {
     renderVoices(lesson.backing.bass, out, sampleRate, { harmonics: [1, 0.6, 0.3, 0.15, 0.08], decay: 0.5, gain: 0.32 });
     renderVoices(lesson.backing.comp, out, sampleRate, { harmonics: [1, 0.4, 0.3, 0.15], attack: 0.01, decay: 0.25, gain: 0.07 });
+    // Held chords (slow and minor styles): a soft organ-like pad.
+    renderVoices(lesson.backing.pads ?? [], out, sampleRate, { harmonics: [1, 0.5, 0.25, 0.1], attack: 0.08, decay: 30, release: 0.15, gain: 0.035 });
     renderDrums(lesson.backing.drums, out, sampleRate, { gain: 0.35 });
   }
   if (harp) {

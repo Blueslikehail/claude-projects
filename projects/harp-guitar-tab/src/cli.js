@@ -36,7 +36,8 @@ export const USAGE = `harp-guitar-tab — harmonica tab tools
   parse    [--harp C] "<tab>"            tab -> notes
   transcribe <file.wav> [--harp A | --song E] [--notes]   recording -> tab
   render   [--harp C] [--bpm 100] "<tab>" <out.wav>       tab -> audio
-  lesson   [--song E] [--level 1-4] [--tempo 80] [--choruses 1] [--seed 1] [out.wav]
+  lesson   [--style shuffle] [--song E] [--level 1-4] [--tempo] [--choruses 1] [--seed 1] [out.wav]
+           styles: shuffle, slow, boogie, swamp, minor, reed (Jimmy Reed, 1st position)
            a generated 12-bar blues lesson: tab with chords, and audio with a band
 
 Tab: 4 blow, -4 draw, -3↓ bend (one arrow = one semitone), 6↑ overblow, -(1 2 3) chord,
@@ -182,12 +183,13 @@ export function run(argv) {
     case "lesson": {
       const lesson = generateLesson({
         songKey: opts.song ?? "E",
+        style: opts.style ?? "shuffle",
         level: Number(opts.level ?? 2),
-        tempo: Number(opts.tempo ?? 80),
+        tempo: opts.tempo ? Number(opts.tempo) : undefined,
         choruses: Number(opts.choruses ?? 1),
         seed: Number(opts.seed ?? 1),
       });
-      const lines = [`${lesson.title} · ${LEVELS[lesson.level]} · ${lesson.tempo} bpm shuffle`, ""];
+      const lines = [`${lesson.title} · ${LEVELS[lesson.level]} · ${lesson.tempo} bpm`, ""];
       for (const l of lessonTabLines(lesson)) lines.push(`${String(l.bar).padStart(3)}  ${l.chords.padEnd(8)} ${l.tab}`);
       if (rest[0]) {
         const sampleRate = 32000;

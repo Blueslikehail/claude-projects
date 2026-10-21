@@ -40,18 +40,23 @@ test("suggestions: other harps are labelled with the harp they need", () => {
   assert.equal(article("Eb"), "an");
 });
 
-test("1st position songs rank below 2nd position ones for a 2nd-position lesson", () => {
-  const all = suggestSongs({ harpKey: "A", tempo: 60 }, { limit: SONGS.length });
-  const firstPos = all.findIndex((r) => r.song.position === 1);
-  const lastSecondSameHarp = all.map((r) => r.song.position === 2 && r.sameHarp).lastIndexOf(true);
-  assert.ok(firstPos > lastSecondSameHarp);
+test("a 2nd-position lesson puts a 2nd-position song first, above a 1st-position one", () => {
+  const all = suggestSongs({ harpKey: "A", tempo: 60, feel: ["shuffle"] }, { limit: SONGS.length });
+  assert.equal(all[0].song.position, 2);
+  const rank = (id) => all.findIndex((r) => r.song.id === id);
+  assert.ok(rank("juke") < rank("bright-lights-big-city"));
 });
 
 test("helpers: tempo categories, lesson options, listen links", () => {
   assert.deepEqual([60, 80, 120].map(tempoCategory), ["slow", "medium", "fast"]);
   const juke = SONGS.find((s) => s.id === "juke");
-  assert.deepEqual(lessonOptionsFor(juke), { songKey: "E", tempo: 130 });
-  assert.equal(lessonOptionsFor(SONGS.find((s) => s.position === 1)), null);
+  assert.deepEqual(lessonOptionsFor(juke), { songKey: "E", style: "shuffle", tempo: 130 });
+  const style = (id) => lessonOptionsFor(SONGS.find((s) => s.id === id));
+  assert.deepEqual(style("bright-lights-big-city"), { songKey: "A", style: "reed", tempo: 70 }, "1st position, clamped to the style's range");
+  assert.equal(style("blues-with-a-feeling").style, "slow");
+  assert.equal(style("whammer-jammer").style, "boogie");
+  assert.equal(style("baby-scratch-my-back").style, "swamp");
+  assert.equal(style("help-me").style, "minor");
   const { youtube, spotify } = listenLinks(SONGS.find((s) => s.id === "got-my-mojo-working"));
   assert.equal(youtube, "https://www.youtube.com/results?search_query=Muddy%20Waters%20Got%20My%20Mojo%20Working");
   assert.ok(spotify.startsWith("https://open.spotify.com/search/"));
@@ -84,4 +89,17 @@ test("your licks are used in lessons and marked as yours", () => {
   }
   assert.ok(used >= 15, `own licks used ${used} times in 10 lessons`);
   assert.equal(generateLesson({ songKey: "E", seed: 1 }).licks.some((l) => l.mine), false);
+});
+
+test("suggestions follow the lesson's style", () => {
+  const top = (session) => suggestSongs(session)[0].song.id;
+  assert.equal(top({ harpKey: "A", tempo: 60, feel: ["slow"] }), "blues-with-a-feeling", "slow beats same-harp-but-fast");
+  assert.equal(top({ harpKey: "A", tempo: 90, feel: ["groove"], form: "minor groove" }), "help-me");
+  assert.equal(top({ harpKey: "A", tempo: 130, feel: ["shuffle"] }), "juke");
+  const slow = suggestSongs({ harpKey: "D", tempo: 60, feel: ["slow"] });
+  assert.equal(slow[0].song.id, "blues-with-a-feeling");
+  const reed = suggestSongs({ harpKey: "A", position: 1, tempo: 80, feel: ["shuffle"] });
+  assert.equal(reed[0].song.id, "bright-lights-big-city");
+  const boogie = suggestSongs({ harpKey: "A", tempo: 130, feel: ["boogie", "rock"] });
+  assert.ok(boogie.slice(0, 2).some((r) => r.song.id === "on-the-road-again" || r.song.id === "whammer-jammer"));
 });

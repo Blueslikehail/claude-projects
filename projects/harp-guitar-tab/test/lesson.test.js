@@ -102,7 +102,7 @@ test("backing: bass, comp and drums cover the form; final bar rings", () => {
   assert.equal(backing.bass.length, 11 * 8 + 1);
   assert.ok(backing.bass.every((n) => n.pitches[0] >= 28 && n.pitches[0] <= 52));
   assert.ok(backing.drums.some((d) => d.kind === "crash"));
-  assert.ok(backing.comp.at(-1).duration > 1);
+  assert.ok(backing.pads.at(-1).duration > 1, "final chord rings");
   assert.ok(backing.comp.every((c) => c.time < duration));
 });
 
@@ -123,4 +123,74 @@ test("rendering: parts mix, the harp part alone transcribes back to the lesson t
   // (Pitches, not tokens: G is -2 or 3, and the lesson's own choice is kept in the app.)
   const heard = transcribe(harpOnly, sampleRate).notes.map((n) => n.pitches.join("+"));
   assert.deepEqual(heard, lesson.events.map((e) => e.pitches.join("+")));
+});
+
+// ---------- styles ----------
+
+import { STYLES, STYLE_IDS, beatTime } from "../src/core/lesson/styles.js";
+
+test("every style has a beginner lick and something at each level for every slot", () => {
+  for (const style of STYLE_IDS) {
+    for (const slot of ["I", "IV", "V", "T", "E"]) {
+      const levels = LICKS.filter((l) => l.styles.includes(style) && l.slot === slot).map((l) => lickLevel(l.tab));
+      assert.ok(levels.includes(1), `${style} ${slot} has no beginner lick`);
+    }
+  }
+  assert.ok(LICKS.every((l) => l.styles.length && l.styles.every((s) => STYLES[s])), "lick styles exist");
+});
+
+test("beatTime: swung, straight and triplet positions", () => {
+  assert.ok(Math.abs(beatTime(0.5, 60, 2 / 3) - 2 / 3) < 1e-9);
+  assert.equal(beatTime(0.5, 60, 0.5), 0.5);
+  assert.ok(Math.abs(beatTime(1 / 3, 60) - 1 / 3) < 1e-9, "triplets are exact");
+  assert.equal(beatTime(4, 120), 2);
+});
+
+test("styles shape the lesson: position, harp, chords, tempo, licks", () => {
+  const reed = generateLesson({ songKey: "A", style: "reed", seed: 2 });
+  assert.equal(reed.position, 1);
+  assert.equal(reed.harpKey, "A", "1st position: harp in the song's key");
+  assert.match(reed.title, /^Jimmy Reed in A · A harp, 1st position/);
+  assert.equal(reed.tempo, STYLES.reed.tempo.default);
+  assert.ok(reed.licks.every((l) => l.id.startsWith("r-")));
+
+  const minor = generateLesson({ songKey: "E", style: "minor", seed: 2 });
+  assert.equal(minor.harpKey, "A");
+  assert.deepEqual([...new Set(minor.chordTrack.map((c) => c.name))], ["Em7", "Am7", "Bm7"]);
+  assert.match(minor.title, /E minor/);
+  // No major third of the i chord (G#) in a minor lesson.
+  assert.ok(minor.events.every((e) => e.pitches.every((p) => p % 12 !== 8)), "no G# in E minor");
+
+  const slow = generateLesson({ songKey: "E", style: "slow", seed: 2 });
+  assert.ok(slow.tempo <= 75);
+  assert.ok(slow.backing.pads.length >= 12, "held chords");
+  assert.ok(slow.backing.drums.filter((d) => d.kind === "hat").length >= 11 * 12, "12/8 hats");
+
+  const boogie = generateLesson({ songKey: "E", style: "boogie", seed: 2, tempo: 120 });
+  const offbeat = boogie.backing.bass[1].time - boogie.backing.bass[0].time;
+  assert.ok(Math.abs(offbeat - 0.25) < 1e-9, "straight eighths at 120 bpm");
+
+  const swamp = generateLesson({ songKey: "E", style: "swamp", seed: 2 });
+  assert.ok(swamp.backing.drums.some((d) => d.kind === "rim"));
+  assert.throws(() => generateLesson({ style: "polka" }), /Unknown style/);
+});
+
+test("every style and level renders a playable lesson", () => {
+  for (const style of STYLE_IDS) {
+    for (const level of [1, 2, 3]) {
+      const lesson = generateLesson({ songKey: "G", style, level, seed: level * 7 });
+      assert.ok(lesson.events.length > 10, `${style} ${level}`);
+      assert.ok(lesson.licks.every((l) => l.level <= level), `${style} level ${level}`);
+      const harp = createHarp(lesson.harpKey);
+      for (const e of lesson.events) assert.deepEqual(parseToken(e.token, harp).pitches, e.pitches);
+    }
+  }
+});
+
+test("your licks only go into the styles they're for", () => {
+  const mine = [{ id: "m1", name: "x", slot: "I", tab: "-2:16" }]; // default: 2nd-position major styles
+  const inShuffle = [1, 2, 3, 4, 5].some((seed) => generateLesson({ style: "shuffle", seed, myLicks: mine }).licks.some((l) => l.mine));
+  const inReed = [1, 2, 3, 4, 5].some((seed) => generateLesson({ style: "reed", seed, myLicks: mine }).licks.some((l) => l.mine));
+  const inMinor = [1, 2, 3, 4, 5].some((seed) => generateLesson({ style: "minor", seed, myLicks: [{ ...mine[0], styles: ["minor"] }] }).licks.some((l) => l.mine));
+  assert.deepEqual([inShuffle, inReed, inMinor], [true, false, true]);
 });

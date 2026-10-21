@@ -3,7 +3,10 @@
 import {
   HARP_KEYS,
   LEVELS,
+  DEFAULT_MY_LICK_STYLES,
   SLOT_NAMES,
+  STYLES,
+  STYLE_IDS,
   article,
   createHarp,
   harpForSong,
@@ -27,7 +30,7 @@ const ordinal = (n) => `${n}${["th", "st", "nd", "rd"][n % 10] ?? "th"}`;
 
 /** @param {{ loadLesson: (lesson, full: Uint8Array, backing: Uint8Array) => void, status: (html:string) => void }} app */
 export function createLessons(app) {
-  const options = { songKey: "E", level: 2, tempo: 80, choruses: 1, seed: newSeed() };
+  const options = { style: "shuffle", songKey: "E", level: 2, tempo: STYLES.shuffle.tempo.default, choruses: 1, seed: newSeed() };
   let worker = null;
   let mine = loadMine();
   let useMine = true;
@@ -63,7 +66,8 @@ export function createLessons(app) {
   }
 
   function renderSongs(lesson) {
-    const ranked = suggestSongs({ harpKey: lesson.harpKey, position: 2, tempo: lesson.tempo, feel: "shuffle", form: "12-bar" }, { limit: 6 });
+    const def = STYLES[lesson.style];
+    const ranked = suggestSongs({ harpKey: lesson.harpKey, position: lesson.position, tempo: lesson.tempo, feel: def.feel, form: def.form }, { limit: 6 });
     $("song-list").innerHTML = ranked
       .map(({ song, reasons }) => {
         const links = listenLinks(song);
@@ -80,11 +84,8 @@ export function createLessons(app) {
           <div class="song-actions">
             <a class="button small" href="${links.youtube}" target="_blank" rel="noopener noreferrer">YouTube</a>
             <a class="button small" href="${links.spotify}" target="_blank" rel="noopener noreferrer">Spotify</a>
-            ${
-              lessonOpts
-                ? `<button class="button small" data-song-lesson="${song.id}" data-key="${lessonOpts.songKey}" data-tempo="${lessonOpts.tempo}">Lesson in ${lessonOpts.songKey}, ${lessonOpts.tempo} bpm</button>`
-                : `<span class="muted small">1st-position lessons: later</span>`
-            }
+            <button class="button small" data-song-lesson="${song.id}" data-key="${lessonOpts.songKey}" data-style="${lessonOpts.style}" data-tempo="${lessonOpts.tempo}"
+              title="A ${STYLES[lessonOpts.style].name} lesson in ${lessonOpts.songKey}">${STYLES[lessonOpts.style].name} lesson in ${lessonOpts.songKey}</button>
             <details class="sources"><summary>Sources</summary>${sources}</details>
           </div>
         </li>`;
@@ -95,11 +96,9 @@ export function createLessons(app) {
   $("song-list").addEventListener("click", (ev) => {
     const btn = ev.target.closest("[data-song-lesson]");
     if (!btn) return;
+    setStyle(btn.dataset.style, Number(btn.dataset.tempo));
     options.songKey = btn.dataset.key;
-    options.tempo = Number(btn.dataset.tempo);
     $("lesson-key").value = options.songKey;
-    $("lesson-tempo").value = options.tempo;
-    $("lesson-tempo-out").textContent = `${options.tempo} bpm`;
     updateHint();
     generate();
   });
@@ -128,26 +127,43 @@ export function createLessons(app) {
     $("my-lick-list").innerHTML = mine.length
       ? mine
           .map(
-            (l) => `<li><strong>${esc(l.name)}</strong> <span class="muted">· ${SLOT_NAMES[l.slot]} · ${LEVELS[l.level] ?? ""}${l.song ? ` · from ${esc(l.song)}` : ""}</span>
+            (l) => `<li><strong>${esc(l.name)}</strong> <span class="muted">· ${SLOT_NAMES[l.slot]} · ${LEVELS[l.level] ?? ""} · ${esc(styleLabel(l.styles))}${l.song ? ` · from ${esc(l.song)}` : ""}</span>
               <code>${esc(l.tab.replace(/ r:\d+$/, ""))}</code> <button class="button small" data-remove="${esc(l.id)}">Remove</button></li>`,
           )
           .join("")
       : `<li class="muted">No licks yet. Add one you learned from a record — it will show up in your lessons.</li>`;
   }
 
-  function addLick({ name, song, slot, tab }) {
+  function styleLabel(styles) {
+    return styles ? styles.map((s) => STYLES[s]?.name ?? s).join(", ") : "2nd-position styles";
+  }
+
+  function addLick({ name, song, slot, tab, styles }) {
     const check = validateLick(tab, createHarp("C"));
     if (!check.ok) return check;
-    mine.push({ id: `my-${Date.now().toString(36)}-${mine.length}`, name: name.trim(), song: song?.trim() || undefined, slot, tab: check.tab, level: check.level });
+    const valid = Array.isArray(styles) ? styles.filter((s) => STYLES[s]) : undefined;
+    mine.push({
+      id: `my-${Date.now().toString(36)}-${mine.length}`,
+      name: name.trim(),
+      song: song?.trim() || undefined,
+      slot,
+      tab: check.tab,
+      level: check.level,
+      styles: valid?.length ? valid : undefined,
+    });
     return check;
   }
 
   $("lick-slot").innerHTML = Object.entries(SLOT_NAMES)
     .map(([slot, name]) => `<option value="${slot}">${name}</option>`)
     .join("");
+  $("lick-style").innerHTML =
+    `<option value="">Any 2nd-position style</option>` + STYLE_IDS.map((id) => `<option value="${id}">${STYLES[id].name} only</option>`).join("");
+  $("lick-style").title = `"Any" means: ${DEFAULT_MY_LICK_STYLES.map((s) => STYLES[s].name).join(", ")}. Jimmy Reed licks are 1st position.`;
   $("lick-form").addEventListener("submit", (ev) => {
     ev.preventDefault();
-    const result = addLick({ name: $("lick-name").value, song: $("lick-song").value, slot: $("lick-slot").value, tab: $("lick-tab").value });
+    const style = $("lick-style").value;
+    const result = addLick({ name: $("lick-name").value, song: $("lick-song").value, slot: $("lick-slot").value, tab: $("lick-tab").value, styles: style ? [style] : undefined });
     const msg = $("lick-msg");
     msg.classList.toggle("lick-msg-error", !result.ok);
     if (!result.ok) {
@@ -197,9 +213,29 @@ export function createLessons(app) {
   // ---------- lesson settings ----------
 
   function updateHint() {
-    const harp = harpForSong(options.songKey, 2);
+    const def = STYLES[options.style];
+    const harp = harpForSong(options.songKey, def.position);
     $("lesson-harp").textContent = `Use ${article(harp)} ${harp} harp`;
+    $("lesson-blurb").textContent = def.blurb;
   }
+
+  /** Switch style; the tempo moves into the style's range (or to `tempo`). */
+  function setStyle(style, tempo) {
+    const def = STYLES[style];
+    options.style = style;
+    options.tempo = tempo ?? def.tempo.default;
+    $("lesson-style").value = style;
+    Object.assign($("lesson-tempo"), { min: def.tempo.min, max: def.tempo.max });
+    $("lesson-tempo").value = options.tempo;
+    $("lesson-tempo-out").textContent = `${options.tempo} bpm`;
+  }
+
+  $("lesson-style").innerHTML = STYLE_IDS.map((id) => `<option value="${id}">${STYLES[id].name}</option>`).join("");
+  $("lesson-style").addEventListener("change", (ev) => {
+    setStyle(ev.target.value);
+    updateHint();
+    generate();
+  });
 
   $("lesson-key").innerHTML = HARP_KEYS.map((k) => `<option ${k === options.songKey ? "selected" : ""}>${k}</option>`).join("");
   $("lesson-level").innerHTML = Object.entries(LEVELS)
@@ -227,6 +263,7 @@ export function createLessons(app) {
     options.seed = newSeed();
     generate();
   });
+  setStyle(options.style);
   updateHint();
   renderMine();
 
