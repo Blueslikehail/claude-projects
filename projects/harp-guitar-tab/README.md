@@ -88,7 +88,26 @@ dependencies, so the same code will run in the web app:
   everything else (loops, speed, play-along, Copy tab) works on lessons too.
 - CLI: `npm start -- lesson --song E --level 2 --tempo 80 lesson.wav`.
 
-Roadmap: richer sound (sampled instruments) · more licks and forms (quick change, slow
+**Songs to practise with (done).** `src/core/songs.js`:
+
+- After each lesson, a ranked list of classic recordings to play along with: same harp
+  and position first ("same A harp in 2nd position — play along in the record's key"),
+  then feel, tempo and form. Each has YouTube/Spotify **search** links (nothing hosted),
+  its sources, and a confidence label: *documented* (sources agree), *reported* (one
+  source), *partial* (harp sourced, position assumed), *disputed* (sources disagree).
+- "Lesson in E, 130 bpm" makes a lesson in that song's key and tempo.
+- Catalog: 15 songs (Little Walter, Sonny Boy Williamson II, Slim Harpo, Muddy Waters,
+  Junior Wells, Paul Butterfield, Jimmy Reed, Canned Heat, J. Geils Band, Blues Traveler).
+  Only facts are stored — key, harp, position, a rough feel/tempo — never licks or tab
+  from the records. Songs whose key couldn't be sourced were left out.
+
+**My licks (done).** Add licks you learn from records (tab, optional rhythm, the song,
+where it goes in the 12-bar). They're checked as playable, levelled, kept in this
+browser (Export/Import as JSON to back up or move them), and used in your lessons
+most of the time, marked "★ yours · from Juke".
+
+Roadmap: load an original recording → key, tempo and changes → licks in sync with it ·
+richer sound (sampled instruments) · more licks and forms (quick change, slow
 blues, minor) · LLM-written licks via a Worker · 6 guitar · 7 instrument separation.
 5 chord detection / polyphonic (basic-pitch) · 6 guitar · 7 instrument separation.
 Every stage is a swappable module, so separation or URL import can later run on a server.
@@ -225,3 +244,9 @@ npm test
   for the harp, simple bass/comp/drums) — functional rather than pretty; sampled
   instruments are the obvious next step. Generation + rendering of both mixes takes
   ~1.5 s in a worker.
+- **Songs:** facts came from web searches (Oct 2026); many pages couldn't be opened
+  from the build environment, so each entry keeps its sources and a confidence label, and
+  the catalog test checks that harp + position actually give the song key. Several famous
+  tunes (I'm a King Bee, Whoopin' the Blues, Messin' with the Kid, Smokestack Lightnin')
+  were left out because no source gave their key. Matching is by harp, position, feel,
+  tempo and form — not note-for-note riff similarity, which would need the records' notes.

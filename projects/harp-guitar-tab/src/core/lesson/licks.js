@@ -4,6 +4,8 @@
 // Format: "token:eighths" separated by spaces; "r" is a rest, "~" slides into the note
 // from the previous one (a bend on the same hole). Eighths are swung in a shuffle.
 // Every lick is 2 bars of 4/4 = 16 eighths.
+
+import { parseToken } from "../tab.js";
 //
 // Slots in the 12-bar form: I (bars 1-2, 3-4, 7-8), IV (5-6), V-IV (9-10),
 // turnaround (11-12, ends on V), ending (11-12 of the last chorus, ends on I).
@@ -78,3 +80,32 @@ export function lickLevel(tab) {
 }
 
 export const LEVELS = { 1: "Beginner", 2: "Bends", 3: "Advanced", 4: "Overblows" };
+
+export const SLOT_NAMES = { I: "I chord", IV: "IV chord", V: "V to IV", T: "Turnaround", E: "Ending" };
+
+/**
+ * Check a lick someone typed in: every token must be playable, the rhythm must fit in two
+ * bars (16 eighths); shorter licks are padded with rest. Durations default to 2 (a quarter).
+ * "-2 -3↓ 4" is accepted as "-2:2 -3↓:2 4:2".
+ * @returns {{ ok: true, tab: string, level: number } | { ok: false, error: string }}
+ */
+export function validateLick(text, harp) {
+  const raw = String(text).trim();
+  if (!raw) return { ok: false, error: "Type some tab, e.g. -2 -3↓ 4 -4" };
+  // Give tokens without a duration a quarter note; keep chords together.
+  const tokens = raw.match(/~?-?\([^)]*\)(?::\d+)?|[^\s]+/g) ?? [];
+  const withDur = tokens.map((t) => (/:\d+$/.test(t) ? t : `${t}:2`));
+  const { tokens: parsed, units } = parseLick(withDur.join(" "));
+  if (parsed.length !== withDur.length) return { ok: false, error: "Couldn't read the rhythm; write durations as token:eighths, e.g. -2:2" };
+  if (units > 16) return { ok: false, error: `That's ${units / 2} beats; a lick can be up to 2 bars (8 beats).` };
+  for (const t of parsed) {
+    if (t.rest) continue;
+    try {
+      parseToken(t.token, harp);
+    } catch (err) {
+      return { ok: false, error: err.message.replace(/ on the \S+ harp$/, " on a diatonic harp") };
+    }
+  }
+  const tab = units < 16 ? `${withDur.join(" ")} r:${16 - units}` : withDur.join(" ");
+  return { ok: true, tab, level: lickLevel(tab) };
+}

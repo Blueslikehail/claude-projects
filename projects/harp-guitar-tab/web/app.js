@@ -126,6 +126,7 @@ let worker = null;
 async function loadFile(file) {
   state.lesson = null;
   $("lesson-card").hidden = true;
+  $("lesson-extras").hidden = true;
   $("tab-title").textContent = "Tab";
   state.fileName = file.name;
   if (state.originalUrl) URL.revokeObjectURL(state.originalUrl);
@@ -659,6 +660,7 @@ function escapeHtml(s) {
 const lessons = createLessons({ loadLesson, status });
 $("new-lesson").addEventListener("click", () => {
   $("lesson-card").hidden = false;
+  $("lesson-extras").hidden = false;
   lessons.generate();
 });
 

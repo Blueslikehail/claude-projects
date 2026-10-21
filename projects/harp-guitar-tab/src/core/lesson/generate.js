@@ -32,8 +32,13 @@ export function eighthTime(units, tempo, swing = true) {
   return beats * beat + (units % 2 ? (swing ? 2 / 3 : 1 / 2) * beat : 0);
 }
 
-/** Pick a lick for a slot: at or under the level, mostly at it, not the one just used. */
-function pickLick(slot, level, random, recent) {
+/**
+ * Pick a lick for a slot: at or under the level, mostly at it, not the one just used.
+ * Your own licks for the slot (any level) are used most of the time when there are some.
+ */
+function pickLick(slot, level, random, recent, mine = []) {
+  const own = mine.filter((l) => l.slot === slot && l.id !== recent.at(-1)); // may come back, just not twice in a row
+  if (own.length && random() < 0.7) return own[Math.floor(random() * own.length)];
   const pool = LICKS.filter((l) => l.slot === slot && lickLevel(l.tab) <= level);
   const fresh = pool.filter((l) => !recent.includes(l.id));
   const choices = fresh.length ? fresh : pool;
@@ -44,9 +49,10 @@ function pickLick(slot, level, random, recent) {
 
 /**
  * @param {{ songKey?: string, level?: 1|2|3|4, tempo?: number, choruses?: number,
- *           swing?: boolean, seed?: number }} options
+ *           swing?: boolean, seed?: number, myLicks?: object[] }} options
+ *   myLicks: your own licks ({ id, name, slot, tab, song? }, see validateLick)
  */
-export function generateLesson({ songKey = "E", level = 2, tempo = 80, choruses = 1, swing = true, seed = 1 } = {}) {
+export function generateLesson({ songKey = "E", level = 2, tempo = 80, choruses = 1, swing = true, seed = 1, myLicks = [] } = {}) {
   const random = rng(seed);
   const root = parsePitchClass(songKey);
   const harpKey = harpForSong(songKey, 2);
@@ -70,11 +76,12 @@ export function generateLesson({ songKey = "E", level = 2, tempo = 80, choruses 
     });
     // Licks, one per two bars.
     SLOTS.forEach((slot, s) => {
-      const lick = pickLick(last && slot === "T" ? "E" : slot, level, random, recent);
+      const lick = pickLick(last && slot === "T" ? "E" : slot, level, random, recent, myLicks);
       recent.push(lick.id);
       if (recent.length > 3) recent.shift();
       const startBar = c * 12 + s * 2;
-      licks.push({ id: lick.id, name: lick.name, slot: lick.slot, bar: startBar, level: lickLevel(lick.tab) });
+      const mine = myLicks.includes(lick);
+      licks.push({ id: lick.id, name: lick.name, slot: lick.slot, bar: startBar, level: lickLevel(lick.tab), mine, song: lick.song });
       let unit = startBar * barUnits;
       const tokens = parseLick(lick.tab).tokens;
       tokens.forEach((t, k) => {

@@ -194,6 +194,28 @@ label { display: inline-flex; align-items: center; gap: 6px; }
 .lesson-licks { margin: 8px 0 0; padding-left: 20px; columns: 2; font-size: 13px; }
 @media (max-width: 640px) { .lesson-licks { columns: 1; } }
 .lesson-mode .transcribe-only { display: none; }
+.lesson-extras { display: grid; gap: 12px; }
+.lesson-extras h3 { font-size: 15px; margin: 0 0 4px; }
+.song-list { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
+@media (max-width: 400px) { .song-list { grid-template-columns: 1fr; } }
+.song { border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; background: var(--bg); min-width: 0; }
+.song-actions { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 6px; }
+.song-actions a.button { text-decoration: none; }
+.conf { font-size: 11px; padding: 0 6px; border-radius: 4px; border: 1px solid var(--border); white-space: nowrap; }
+.conf.documented { color: #15803d; border-color: #15803d; }
+.conf.reported { color: var(--muted); }
+.conf.partial, .conf.disputed { color: #b45309; border-color: #b45309; }
+.sources { font-size: 12px; }
+.sources summary { cursor: pointer; color: var(--muted); }
+.sources a { margin-right: 8px; color: var(--blow); overflow-wrap: anywhere; }
+.my-licks summary { cursor: pointer; font-weight: 600; }
+.lick-form { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.lick-form input, .lick-form select { font: inherit; padding: 4px 6px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface); color: var(--text); min-width: 0; }
+.lick-form .lick-tab { flex: 1 1 260px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.lick-msg-error { color: var(--bad) !important; }
+.my-lick-list { list-style: none; padding: 0; margin: 8px 0; display: grid; gap: 4px; font-size: 13px; }
+.my-lick-list code { font-size: 13px; }
+.mine-badge { color: var(--accent); font-weight: 600; }
 .line-chords { font: 700 12px system-ui, sans-serif; color: var(--muted); min-width: 3.5em; }
 
 .lower { display: grid; grid-template-columns: 1fr 280px; gap: 12px; }
