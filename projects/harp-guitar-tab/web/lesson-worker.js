@@ -1,13 +1,16 @@
 // Generates a lesson off the main thread. With `synth`, also renders its audio (with and
 // without the harp) using the built-in synthesizer; otherwise the page renders it with
 // recorded samples (sampler.js).
-import { encodeWav, generateLesson, renderLesson } from "./core/index.js";
+import { encodeWav, generateLesson, lickLesson, renderLesson, tabLesson } from "./core/index.js";
 
 const SAMPLE_RATE = 32000;
 
-self.onmessage = ({ data: { options, synth } }) => {
+// kind: "lesson" (a generated 12-bar), "lick" (practise one lick), "tab" (a tab of yours)
+const MAKE = { lesson: generateLesson, lick: lickLesson, tab: tabLesson };
+
+self.onmessage = ({ data: { kind = "lesson", options, synth } }) => {
   try {
-    const lesson = generateLesson(options);
+    const lesson = MAKE[kind](options);
     if (!synth) {
       self.postMessage({ lesson });
       return;

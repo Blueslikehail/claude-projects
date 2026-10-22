@@ -23,7 +23,7 @@ export function planVoices(notes, available, { glideTime = 0.12 } = {}) {
   let last = null; // the voice a slide would continue
   for (const note of notes) {
     if (note.glide && last && note.pitches.length === 1) {
-      last.rates.push({ time: note.time, rate: rateFor(note.pitches[0], last.sample), glide: glideTime });
+      last.rates.push({ time: note.time, rate: rateFor(note.pitches[0], last.sample), glide: note.glideTime ?? glideTime });
       last.stop = Math.max(last.stop, note.time + note.duration);
       continue;
     }

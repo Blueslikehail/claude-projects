@@ -13,6 +13,7 @@
       <h1>Harp Tab Player</h1>
       <div class="actions">
         <button id="new-lesson" class="button primary">🎵 New lesson</button>
+        <button id="open-library" class="button" title="Every lick, the great players, and tabs you import">📚 Library</button>
         <label class="button" title="Load a record you own: it finds the key, beat and verses and writes licks in time with it">
           🎧 Play along with a song
           <input id="song-file" type="file" accept="audio/*,video/*" hidden />
@@ -34,6 +35,9 @@
         <p class="muted"><strong>🎤 Live tab</strong> shows the holes you play as you play them.
           <strong>Transcribe a recording</strong> (beta) tries to read a solo harmonica recording —
           drop the file here.</p>
+        <p class="muted"><strong>📚 Library</strong> has every lick by style and player, cards on the great
+          harmonica players with records to hear and where to find tabs, and an importer for tab you
+          find online or in a book — kept only in your browser.</p>
         <p class="muted">Everything runs in your browser — nothing is uploaded.</p>
         <p class="muted small">Instrument sounds: FluidR3_GM soundfont by Frank Wen, CC BY 3.0
           (<a href="./samples/CREDITS.md">credits</a>).</p>
@@ -202,6 +206,10 @@
                 the label says how sure they are.</p>
               <ul id="song-list" class="song-list"></ul>
             </section>
+            <section class="players" aria-labelledby="players-title">
+              <h3 id="players-title">Players to hear</h3>
+              <ul id="style-players" class="style-players"></ul>
+            </section>
             <details id="my-licks" class="my-licks">
               <summary>My licks (<span id="my-licks-count">0</span>) — add licks you learn from songs</summary>
               <form id="lick-form" class="lick-form">
@@ -213,7 +221,8 @@
                 <button class="button small primary">Add</button>
               </form>
               <p id="lick-msg" class="muted small">Rhythm in eighth notes after a colon (2 = a quarter, the default) ·
-                <code>~</code> slides into a bend · <code>r</code> is a rest · up to 2 bars.</p>
+                <code>~</code> slides into a bend · <code>-4/5</code> shakes · <code>r</code> is a rest · up to 2 bars.
+                Longer tabs: 📚 Library → Import a tab.</p>
               <label class="check small"><input id="use-my-licks" type="checkbox" checked /> Use my licks in lessons</label>
               <ul id="my-lick-list" class="my-lick-list"></ul>
               <div class="row-actions">
@@ -223,6 +232,105 @@
             </details>
           </div>
         </section>
+      </section>
+      <section id="library" class="library" hidden aria-label="Library">
+        <div class="lib-head">
+          <h2>Library</h2>
+          <div class="segmented lib-tabs" role="tablist">
+            <button class="seg on" role="tab" data-lib-tab="licks" aria-selected="true">Licks</button>
+            <button class="seg" role="tab" data-lib-tab="players" aria-selected="false">Players</button>
+            <button class="seg" role="tab" data-lib-tab="import" aria-selected="false">Import a tab</button>
+            <button class="seg" role="tab" data-lib-tab="tabs" aria-selected="false">My tabs</button>
+          </div>
+          <button id="lib-close" class="button small">Close</button>
+        </div>
+
+        <div id="lib-licks">
+          <div class="lesson-controls lib-filters">
+            <select id="lib-style" aria-label="Style"></select>
+            <select id="lib-player" aria-label="Player"></select>
+            <select id="lib-level" aria-label="Level"></select>
+            <select id="lib-slot" aria-label="Place in the 12 bars"></select>
+            <input id="lib-search" type="search" placeholder="Search name, tip, tab…" />
+            <label class="check small"><input id="lib-mine" type="checkbox" /> Only mine</label>
+            <span id="lib-count" class="muted small"></span>
+          </div>
+          <p class="muted small">Licks are written for this app from each style's vocabulary — "in the manner of" a player
+            means built from that player's documented techniques, not a transcription. For the real solos, see the
+            players' tabs and lessons, and import tab you find.</p>
+          <ul id="lib-lick-list" class="lib-list"></ul>
+        </div>
+
+        <div id="lib-players" hidden>
+          <p class="muted small">Facts from the listed sources (searched October 2026); where sources disagree it says so.
+            Tab and lesson links are other people's pages, found by search and not checked from here — some may have moved
+            or be paid. "Listen" searches YouTube.</p>
+          <div id="lib-player-list" class="player-grid"></div>
+          <h3>Where to find tabs</h3>
+          <ul id="lib-sites" class="lib-sites"></ul>
+        </div>
+
+        <div id="lib-import" hidden>
+          <p class="muted small">Paste tab from a website, a book or your notes. Most notations work:
+            <code>-4</code> or <code>4d</code> or <code>(4)</code> for draw, <code>'</code> <code>b</code> or <code>"</code> for bends,
+            <code>6o</code> for overblows, <code>-4/5</code> or <code>-4~</code> for shakes, <code>-123</code> for chords.
+            Lyrics and labels are skipped. What you import stays in this browser.</p>
+          <textarea id="imp-text" rows="7" placeholder="-2 -3' -3 4 -4' -4 5 -4&#10;-2~-3'' -2"></textarea>
+          <div class="lesson-controls">
+            <label>Notation
+              <select id="imp-notation">
+                <option value="">Detect</option>
+                <option value="minus">-4 draw, 4 blow</option>
+                <option value="plus">4 draw, 4+ blow (BluesHarmonica.com)</option>
+                <option value="parens">(4) draw, 4 blow</option>
+                <option value="suffix">4d draw, 4b blow</option>
+                <option value="arrows">↓4 draw, ↑4 blow</option>
+              </select>
+            </label>
+            <label>Each note
+              <select id="imp-rhythm">
+                <option value="2">a quarter</option>
+                <option value="1">an eighth</option>
+                <option value="4">a half</option>
+              </select>
+            </label>
+            <button id="imp-read" class="button primary">Read tab</button>
+            <button id="imp-new" class="button small">Clear</button>
+            <span id="imp-notation-used" class="muted small"></span>
+          </div>
+          <div id="imp-result" class="imp-result"></div>
+          <ul id="imp-warnings" class="imp-warnings small"></ul>
+          <div id="imp-next" hidden>
+            <label class="block">Rhythm <span class="muted small">— eighths after the colon (2 = quarter, 2/3 = triplet, 1/2 = sixteenth); or tap it</span>
+              <textarea id="imp-lick" rows="3" spellcheck="false"></textarea>
+            </label>
+            <div class="lesson-controls">
+              <button id="imp-tap" class="button" title="Tap once per note (button or space bar), then once more at the end">Tap rhythm</button>
+              <span id="imp-check" class="muted small"></span>
+            </div>
+            <div class="lesson-controls">
+              <input id="imp-name" placeholder="Name, e.g. Juke chorus 1" />
+              <input id="imp-source" placeholder="Where it's from (link or book, optional)" />
+              <label>Band <select id="imp-style"></select></label>
+              <label>Song key <select id="imp-key"></select></label>
+            </div>
+            <div class="lesson-controls">
+              <button id="imp-practise" class="button primary">▶ Practise</button>
+              <button id="imp-save" class="button">Save to my tabs</button>
+              <span class="lick-save"><button id="imp-save-lick" class="button">Save as a lick</button> for <select id="imp-slot" aria-label="Place in the 12 bars"></select></span>
+            </div>
+          </div>
+        </div>
+
+        <div id="lib-tabs" hidden>
+          <p class="muted small">Tabs you imported. They're saved only in this browser — Export makes a file you can import on
+            another device (it includes your licks).</p>
+          <ul id="lib-tab-list" class="lib-list"></ul>
+          <div class="row-actions">
+            <button id="lib-export" class="button small">Export licks and tabs</button>
+            <label class="button small">Import a file <input id="lib-import-file" type="file" accept="application/json,.json" hidden /></label>
+          </div>
+        </div>
       </section>
     </main>
 

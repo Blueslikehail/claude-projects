@@ -21,6 +21,7 @@ import {
   suggestHarps,
 } from "./core/index.js";
 import { createLessons } from "./lesson.js";
+import { createLibrary } from "./library.js";
 import { createSongs } from "./song.js";
 import { createPractice } from "./practice.js";
 
@@ -74,6 +75,7 @@ function status(html) {
 
 function showPlayer() {
   $("empty").hidden = true;
+  $("library").hidden = true;
   $("player").hidden = false;
   $("player").classList.toggle("no-media", !state.originalUrl);
   $("player").classList.toggle("lesson-mode", Boolean(state.lesson));
@@ -633,6 +635,7 @@ $("copy").addEventListener("click", async () => {
 
 document.addEventListener("keydown", (ev) => {
   if (ev.target.closest("input, select, textarea") && ev.target.type !== "range") return;
+  if (!$("library").hidden) return;
   if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
   const actions = {
     " ": togglePlay,
@@ -671,13 +674,44 @@ function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 }
 
-const lessons = createLessons({ loadLesson, status });
-$("new-lesson").addEventListener("click", () => {
+function showLessonCards() {
   $("song-card").hidden = true;
   $("lesson-card").hidden = false;
   $("lesson-extras").hidden = false;
+}
+
+const lessons = createLessons({
+  loadLesson,
+  status,
+  showLesson: showLessonCards,
+  openPlayer: (id) => library.openPlayer(id),
+  changed: () => library?.refresh(),
+});
+$("new-lesson").addEventListener("click", () => {
+  showLessonCards();
   lessons.generate();
 });
+
+// The library replaces the page while open; Close goes back to what was there.
+let libraryReturn = "empty";
+const library = createLibrary({
+  lessons,
+  status,
+  show(view) {
+    if (view === "library") {
+      if (!$("library").hidden) return;
+      libraryReturn = $("player").hidden ? "empty" : "player";
+      media.pause();
+      $("empty").hidden = $("player").hidden = true;
+      $("library").hidden = false;
+      window.scrollTo({ top: 0 });
+    } else {
+      $("library").hidden = true;
+      $(libraryReturn).hidden = false;
+    }
+  },
+});
+$("open-library").addEventListener("click", () => library.open());
 
 createSongs({
   loadLesson,

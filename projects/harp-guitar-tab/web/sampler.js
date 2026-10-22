@@ -1,6 +1,6 @@
 // Renders lessons with recorded instrument samples (FluidR3_GM, CC BY 3.0 — see
 // samples/CREDITS.md) using an OfflineAudioContext. Drums stay synthesized.
-import { planVoices, renderDrums } from "./core/index.js";
+import { planVoices, playedNotes, renderDrums } from "./core/index.js";
 
 const RATE = 32000;
 let loading = null;
@@ -78,6 +78,7 @@ export async function renderLessonSampled(lesson, samples, { harp = true, backin
     schedule(ctx, master, lesson.backing.bass, samples.bass, { gain: 0.9 });
     schedule(ctx, master, lesson.backing.comp, samples.piano, { gain: 0.28, release: 0.08 });
     schedule(ctx, master, lesson.backing.pads ?? [], samples.organ, { gain: 0.16, attack: 0.08, release: 0.2 });
+    if (samples.guitar) schedule(ctx, master, lesson.backing.guitar ?? [], samples.guitar, { gain: 0.5, attack: 0.003, release: 0.12 });
     const drums = new Float32Array(length);
     renderDrums(lesson.backing.drums, drums, rate, { gain: 0.35 });
     const buf = ctx.createBuffer(1, length, rate);
@@ -87,7 +88,7 @@ export async function renderLessonSampled(lesson, samples, { harp = true, backin
     src.connect(master);
     src.start(0);
   }
-  if (harp) schedule(ctx, master, lesson.events, samples.harmonica, { gain: 0.85 });
+  if (harp) schedule(ctx, master, playedNotes(lesson.events), samples.harmonica, { gain: 0.85 });
   return (await ctx.startRendering()).getChannelData(0);
 }
 

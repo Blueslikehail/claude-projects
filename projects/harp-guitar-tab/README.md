@@ -88,6 +88,31 @@ dependencies, so the same code will run in the web app:
   everything else (loops, speed, play-along, Copy tab) works on lessons too.
 - CLI: `npm start -- lesson --song E --level 2 --tempo 80 lesson.wav`.
 
+**Library, players, country-blues styles, tab import (done).** `web/library.js`,
+`src/core/players.js`, `src/core/lesson/importTab.js`:
+
+- **📚 Library → Licks:** all 147 built-in licks plus yours, filtered by style, player,
+  level, place in the form or text. **▶ Practise** plays a lick four times over the chords
+  it was written for (an IV lick over the IV chord); **In a lesson** writes a 12-bar
+  lesson in that style that keeps using it.
+- **Richer licks:** triplets (`:2/3`), sixteenths (`:1/2`) and shakes (`-4/5`, played as a
+  fast trill in one breath), plus tips on how to play them.
+- **Five new styles with acoustic bands** (steel-string guitar samples and a foot stomp):
+  Delta blues, Hill country (one chord, droning), Piedmont (alternating-thumb guitar,
+  Sonny Terry chugs and whoops), Train & fox chase (one chord, chugging and whistles,
+  DeFord Bailey), Jug band (jug bass, strummed guitar, washboard). Plus Chicago licks
+  after Little Walter and Big Walter.
+- **Players:** cards for 22 harp players — years, region, positions where a source gives
+  them, techniques, records to hear (YouTube searches), honours, sources, and links to
+  other people's tab and lesson pages. Lessons show the players of their style.
+- **Import a tab:** paste tab from any site or book; the notation is detected (`-4` /
+  `4+` / `(4)` / `4d` / arrows, bends as `'` `b` `"`, `6o` overblows, `-4~` shakes,
+  `-123` chords), lyrics and labels are skipped and reported. Set the rhythm by typing
+  durations or by **tapping** it (one tap per note). Then practise it over any style's
+  band, save it to **My tabs**, or save a short one as a lick for your lessons.
+- **Private:** your licks and tabs live only in your browser; **Export** writes one file
+  (licks + tabs) you can import elsewhere. Nothing from tab sites ships with the app.
+
 **Songs to practise with (done).** `src/core/songs.js`:
 
 - After each lesson, a ranked list of classic recordings to play along with: same harp
@@ -166,6 +191,10 @@ One arrow = one semitone.
 | chord | `(4 5 6)`, `-(1 2 3)` |
 | tongue-blocked split | `(1 _ _ 4)` |
 | slide into a bend, same breath | `-3~-3↓↓` |
+| shake (trill to the next hole) | `-4/5` |
+
+Lick rhythm is written after a colon in eighth notes: `-2:2` a quarter, `-2:1` an eighth,
+`-2:2/3` a triplet eighth, `-2:1/2` a sixteenth, `r:4` a half-note rest.
 
 When typing tab, `'` is accepted for `↓` (`-3''` = `-3↓↓`). Notes no harp can play
 show as `?Eb5`.
@@ -314,3 +343,13 @@ npm test
   confusion went away once the key had to make a sensible 12-bar progression. These are
   synthetic recordings — real records (tempo drift, no drums, intros, solos over stop-time,
   8- and 16-bar forms) will do worse; hence the correction buttons.
+- **Library and country blues:** the first licks were plain because each was a few
+  quarter and eighth notes with no ornaments; the format now has triplets, sixteenths and
+  shakes, and the new styles' licks lean on chugs, splits, bent wails and repeated riffs.
+  "In the manner of" a player means built from that player's documented techniques — the
+  licks are original, not transcriptions. Player facts came from a web search (Oct 2026);
+  the search could not open pages and this environment blocks most sites, so tab and
+  lesson links are labelled "not checked", and positions are given only where a source
+  states them (no source gave Sonny Terry's or DeFord Bailey's). Copying other sites' tabs
+  into the app would republish them, so the app links to them and imports what you paste
+  into your own browser instead. Most tab sites don't write rhythm, hence tap-to-time.

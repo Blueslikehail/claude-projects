@@ -34,11 +34,22 @@ export function tokenize(text) {
   return text.match(/~?-?\([^)]*\)|~?[^\s~]+/g) ?? [];
 }
 
+const SHAKE_RE = /^(-?)(\d{1,2}[↓']*)\/(\d{1,2})$/;
+
 /**
  * Parse one token on a given harp. Accepts ' as an ASCII stand-in for ↓.
- * @returns {{ token: string, pitches: number[] }}
+ * A shake "-4/5" (draw 4 trilled with draw 5) gives the main note in `pitches` and the
+ * other in `shake`.
+ * @returns {{ token: string, pitches: number[], shake?: number[] }}
  */
 export function parseToken(token, harp) {
+  const shake = SHAKE_RE.exec(token);
+  if (shake) {
+    const main = parseToken(`${shake[1]}${shake[2]}`, harp);
+    const other = parseToken(`${shake[1]}${shake[3]}`, harp);
+    if (Math.abs(Number(shake[3]) - Number(/\d+/.exec(shake[2])[0])) !== 1) throw new Error(`Bad tab token "${token}": a shake is two neighbouring holes`);
+    return { token: `${main.token}/${shake[3]}`, pitches: main.pitches, shake: other.pitches };
+  }
   const fail = (why) => {
     throw new Error(`Bad tab token "${token}": ${why}`);
   };

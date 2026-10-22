@@ -63,12 +63,14 @@ export function applyNoteEdits(notes, { deleted = new Set(), pitchEdits = new Ma
 
 /**
  * Apply the user's token choices after mapping: `tokenEdits` maps id -> one of the
- * event's alternative tokens (e.g. "-2" instead of "3"). Unknown choices are ignored.
+ * event's alternative tokens (e.g. "-2" instead of "3"). Unknown choices are ignored; a shake
+ * ("-4/5") is kept on events that carry its `shake` pitches.
  */
 export function applyTokenEdits(events, tokenEdits, candidatesFor) {
   return events.map((e) => {
     const want = tokenEdits.get(e.id);
     if (!want || want === e.token || !e.playable) return e;
+    if (e.shake && want.split("/")[0] === e.token) return { ...e, token: want }; // a shake keeps its main note
     const alt = candidatesFor(e).find((c) => c.token === want);
     return alt ? { ...e, ...alt } : e;
   });

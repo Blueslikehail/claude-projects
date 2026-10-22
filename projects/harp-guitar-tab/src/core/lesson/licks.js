@@ -75,6 +75,112 @@ export const LICKS = [
   { id: "e-shake", slot: "E", styles: [SH, SL], name: "Bend ending", tab: "-3↓:2 -2:2 -3↓↓:2 -3↓:2 -2:8" },
   { id: "sl-e-long", slot: "E", styles: [SL], name: "Slow ending", tab: "-3↓:4 -2:12" },
 
+  // ===== Country blues (acoustic) — written in the manner of the players named in `after`;
+  // these are original licks built from their documented techniques, not transcriptions.
+  // `tip` says how to play it. Player facts and sources are in players.js.
+
+  // ---- Delta blues: sparse, talking phrases, low end, tongue-blocked chords ----
+  { id: "d-i-talk", slot: "I", styles: ["delta"], after: "sonny-boy-ii", name: "Low talk", tab: "-2:3 -2:1 -1:2 -2:4 r:6",
+    tip: "Leave the space: say a short phrase and let the guitar answer." },
+  { id: "d-i-chord", slot: "I", styles: ["delta"], name: "Chord answer", tab: "-(1 2 3):2 r:2 -(1 2 3):1 -(1 2 3):3 -2:4 r:4",
+    tip: "Hit the draw chord hard, then narrow to hole 2." },
+  { id: "d-i-walk", slot: "I", styles: ["delta"], name: "Walking low", tab: "-1:2 -2:2 -3:2 -2:2 -1:2 1:2 -1:4" },
+  { id: "d-i-moan", slot: "I", styles: ["delta"], after: "sonny-boy-ii", name: "Moan and answer", tab: "-3↓:4 -2:2 -3↓:2 -2:4 r:4",
+    tip: "Hold the bent 3 like a voice, with a slow hand vibrato." },
+  { id: "d-i-shake", slot: "I", styles: ["delta"], name: "Hold and shake", tab: "-4/5:6 -4:2 -3↓:2 -2:6",
+    tip: "Shake: rock your head (not the harp) between draw 4 and 5." },
+  { id: "d-i-bentcall", slot: "I", styles: ["delta"], name: "Bent call", tab: "-2:2 -3↓:1 ~-3:3 -2:2 r:2 -1:2 -2:4" },
+  { id: "d-i-deep", slot: "I", styles: ["delta"], after: "sonny-boy-ii", name: "Deep moan", tab: "-3↓↓:1 ~-3↓:1 ~-3:2 -2:4 r:2 -2↓↓:2 -2:4" },
+  { id: "d-i-octave", slot: "I", styles: ["delta"], name: "Tongue-blocked octave", tab: "-(1 _ _ 4):3 -(1 _ _ 4):1 -(1 _ _ 4):4 -3↓:2 -2:6",
+    tip: "Tongue on holes 2–3, lips on 1–4: the octave sounds fat and woody." },
+  { id: "d-iv-chord", slot: "IV", styles: ["delta"], name: "Blow-chord answer", tab: "(1 2 3):3 (1 2 3):1 1:2 -1:2 (1 2 3):4 r:4" },
+  { id: "d-iv-moan", slot: "IV", styles: ["delta"], name: "IV moan", tab: "4:2 -3↓:2 4:2 -3↓:2 -2:4 r:4" },
+  { id: "d-iv-low", slot: "IV", styles: ["delta"], name: "Low IV with the flat seven", tab: "(1 2 3):2 -2↓↓:2 2:2 1:2 (1 2 3):4 r:4" },
+  { id: "d-v-chord", slot: "V", styles: ["delta"], name: "Draw chord to blow", tab: "-(1 2 3):4 -1:2 -(1 2 3):2 (1 2 3):4 r:4" },
+  { id: "d-v-climb", slot: "V", styles: ["delta"], name: "Climb and fall", tab: "-1:2 -2:2 -3:2 -4:2 4:2 -3↓:2 -2:4" },
+  { id: "d-v-wail", slot: "V", styles: ["delta"], name: "V wail", tab: "-4:2 ~-4↓:2 4:2 -3↓↓:2 (1 2 3):8" },
+  { id: "d-t-simple", slot: "T", styles: ["delta"], name: "Delta turnaround", tab: "-2:2 -3:2 4:2 -3:2 -2:4 -1:4" },
+  { id: "d-t-bend", slot: "T", styles: ["delta"], name: "Bend-down turnaround", tab: "4:2 -3↓:2 -2:4 r:4 -1:4" },
+  { id: "d-t-chrom", slot: "T", styles: ["delta"], name: "Chromatic walk-down", tab: "-4:1 -4↓:1 4:2 -3↓:2 -3↓↓:2 -2:4 -1:4" },
+  { id: "d-e-home", slot: "E", styles: ["delta"], name: "Down-home ending", tab: "-2:2 -1:2 -2:4 -(1 2 3):8" },
+  { id: "d-e-bent", slot: "E", styles: ["delta"], name: "Bent ending", tab: "-3↓:2 -2:2 -1:2 -2:2 -(1 2 3):8" },
+  { id: "d-e-slide", slot: "E", styles: ["delta"], name: "Slide home", tab: "-3↓↓:1 ~-3↓:1 ~-3:2 -2:4 -(1 _ _ 4):8" },
+
+  // ---- Hill country: one chord, short riffs repeated like a trance ----
+  { id: "h-drone", slot: "I", styles: ["hill"], after: "johnny-woods", name: "Drone riff", tab: "-2:1 -2:1 -3:2 -2:1 -2:1 -3:2 -4:2 -3:2 -2:4",
+    tip: "Same riff every time; the groove comes from repeating it exactly." },
+  { id: "h-pulse", slot: "I", styles: ["hill"], name: "Root pulse", tab: "-2:2 -2:2 -2:1 -3:1 -2:2 -1:2 -2:2 r:4" },
+  { id: "h-chords", slot: "I", styles: ["hill"], name: "Chord drive", tab: "-(1 2 3):1 -(1 2 3):1 -(1 2 3):2 -(1 2 3):1 -(1 2 3):1 -(1 2 3):2 -(2 3 4):4 r:4" },
+  { id: "h-high", slot: "I", styles: ["hill"], name: "Call high", tab: "6:2 -5:2 -4:2 -3:2 -2:4 r:4" },
+  { id: "h-hook", slot: "I", styles: ["hill"], after: "johnny-woods", name: "Bent hook", tab: "-3↓:2 -2:2 -3↓:2 -2:2 4:2 -3↓:2 -2:4" },
+  { id: "h-seven", slot: "I", styles: ["hill"], name: "Flat-seven run", tab: "-2:2 -3↓:2 4:2 -4:2 -5:2 -4:2 -3↓:2 -2:2" },
+  { id: "h-shake", slot: "I", styles: ["hill"], name: "Shake drone", tab: "-4/5:4 -4:2 -3↓:2 -2:8" },
+  { id: "h-triplet", slot: "I", styles: ["hill"], name: "Triplet hook", tab: "-2:2/3 -3↓:2/3 -3:2/3 -4:2 -3↓:2 -2:2 r:8" },
+  { id: "h-deep", slot: "I", styles: ["hill"], name: "Deep hook", tab: "-3↓↓:1 ~-3↓:1 -2:2 -3↓↓:1 ~-3↓:1 -2:2 -1:2 -2:6" },
+  { id: "h-octave", slot: "I", styles: ["hill"], name: "Octave groove", tab: "-(1 _ _ 4):2 -(1 _ _ 4):1 -(1 _ _ 4):1 -(1 _ _ 4):2 -3↓:2 -2:2 -(1 _ _ 4):2 r:4" },
+  { id: "h-e-drone", slot: "E", styles: ["hill"], name: "Drone ending", tab: "-2:2 -3:2 -2:4 -(1 2 3):8" },
+  { id: "h-e-bent", slot: "E", styles: ["hill"], name: "Bent stop", tab: "-3↓:2 -2:2 -3↓:2 -2:2 -(1 2 3):8" },
+
+  // ---- Piedmont: Sonny Terry's chugging chords and hollers over a fingerpicked guitar ----
+  { id: "p-i-chug", slot: "I", styles: ["piedmont", "train"], after: "sonny-terry", name: "Chug", tab: "-(1 2 3):1 (1 2 3):1 -(1 2 3):1 (1 2 3):1 -(1 2 3):1 (1 2 3):1 -(1 2 3):2 -2:4 r:4",
+    tip: "Breathe in and out on the low chords in rhythm: the harp is the drummer." },
+  { id: "p-i-bright", slot: "I", styles: ["piedmont"], name: "Bright answer", tab: "-2:1 -3:1 -4:2 5:2 -4:2 -3:2 -2:2 r:4" },
+  { id: "p-i-whoop", slot: "I", styles: ["piedmont"], after: "sonny-terry", name: "Whoop fall", tab: "-4:1 -4↓:1 -3↓:2 -2:2 r:2 -(1 2 3):2 -2:2 r:4",
+    tip: "Sonny Terry answered harp notes with falsetto whoops; leave the rest for your own holler." },
+  { id: "p-i-run", slot: "I", styles: ["piedmont"], name: "Triplet run", tab: "-2:2/3 -3↓:2/3 -3:2/3 -4:2/3 5:2/3 -4:2/3 -3:2 -2:2 -(1 2 3):4 r:4" },
+  { id: "p-i-holler", slot: "I", styles: ["piedmont"], name: "High holler", tab: "-6:2 6:2 -5:1 5:1 -4:2 -3↓:2 -2:2 r:4" },
+  { id: "p-i-wah", slot: "I", styles: ["piedmont"], after: "sonny-terry", name: "Cupped chug and slide", tab: "-(1 2 3):1 -(1 2 3):1 -(1 2 3):2 -3↓↓:1 ~-3:1 -2:2 -(1 2 3):1 -(1 2 3):1 -(1 2 3):2 -2:4",
+    tip: "Open and close your cupped hands on the chords for a wah." },
+  { id: "p-iv-chug", slot: "IV", styles: ["piedmont"], name: "IV chug", tab: "(1 2 3):1 -(1 2 3):1 (1 2 3):1 -(1 2 3):1 (1 2 3):2 4:2 5:4 r:4" },
+  { id: "p-iv-holler", slot: "IV", styles: ["piedmont"], name: "IV holler", tab: "6:2 5:2 4:2 -3↓:2 4:4 r:4" },
+  { id: "p-v-push", slot: "V", styles: ["piedmont"], name: "V push", tab: "-4:2 -4:1 -4:1 -5:2 -4:2 4:4 (1 2 3):4" },
+  { id: "p-v-bent", slot: "V", styles: ["piedmont"], name: "Bent V", tab: "-(4 5 6):2 -4:2 -4↓:2 4:2 -3↓:2 -2:2 4:4" },
+  { id: "p-t-turn", slot: "T", styles: ["piedmont"], name: "Piedmont turnaround", tab: "-2:1 -3:1 4:2 5:2 4:2 -3:2 -2:2 -1:4" },
+  { id: "p-t-bent", slot: "T", styles: ["piedmont"], name: "Bent turnaround", tab: "5:2 4:2 -3↓:2 -2:2 4:2 -3↓:2 -4:4" },
+  { id: "p-e-chug", slot: "E", styles: ["piedmont"], name: "Chug ending", tab: "-(1 2 3):1 (1 2 3):1 -(1 2 3):2 -2:4 -(1 2 3):8" },
+  { id: "p-e-whoop", slot: "E", styles: ["piedmont"], name: "Whoop ending", tab: "-4:1 -4↓:1 -3↓:2 -2:4 -(1 2 3):8" },
+
+  // ---- Train and fox chase: rhythm and sound effects on one chord ----
+  { id: "t-chug", slot: "I", styles: ["train"], after: "deford-bailey", name: "Chugging train", tab: Array(8).fill("-(1 2 3):1 (1 2 3):1").join(" "),
+    tip: "In-out-in-out on holes 1–3, steady as wheels on the rails. Accent the draws." },
+  { id: "t-accent", slot: "I", styles: ["train"], name: "Accented chug", tab: Array(4).fill("-(1 2 3):2 (1 2 3):1 -(1 2 3):1").join(" ") },
+  { id: "t-steam", slot: "I", styles: ["train"], name: "Steam", tab: "-(1 2 3):3 -(1 2 3):1 (1 2 3):3 (1 2 3):1 -(1 2 3):3 -(1 2 3):1 (1 2 3):4" },
+  { id: "t-slowing", slot: "I", styles: ["train"], name: "Pulling in", tab: "-(1 2 3):2 (1 2 3):2 -(1 2 3):3 (1 2 3):3 -(1 2 3):6" },
+  { id: "t-whistle", slot: "I", styles: ["train"], after: "deford-bailey", name: "Whistle", tab: "-(3 4):6 -(3 4):2 " + Array(4).fill("-(1 2 3):1 (1 2 3):1").join(" "),
+    tip: "The whistle is a long draw on 3 and 4 together; bend it down and up as you get better." },
+  { id: "t-bell", slot: "I", styles: ["train"], name: "Crossing bell", tab: "-4/5:8 " + Array(3).fill("-(1 2 3):1 (1 2 3):1").join(" ") + " -(1 2 3):2" },
+  { id: "t-yelp", slot: "I", styles: ["train"], after: "deford-bailey", name: "Hound yelps", tab: "-4:1 -4↓:1 -4:1 -4↓:1 -3↓:4 -2:4 r:4",
+    tip: "Fox-chase pieces imitate the hounds with quick bent yelps." },
+  { id: "t-bentwhistle", slot: "I", styles: ["train"], name: "Bent whistle", tab: "-4↓:2 ~-4:6 " + Array(4).fill("-(1 2 3):1 (1 2 3):1").join(" ") },
+  { id: "t-wail", slot: "I", styles: ["train"], name: "Hound's wail", tab: "-3↓↓:1 ~-3↓:1 ~-3:6 -2:2 r:6" },
+  { id: "t-e-stop", slot: "E", styles: ["train"], name: "Train stops", tab: "-(1 2 3):1 (1 2 3):1 -(1 2 3):2 (1 2 3):4 -(1 2 3):8" },
+  { id: "t-e-whistle", slot: "E", styles: ["train"], name: "Last whistle", tab: "-4↓:2 ~-4:6 -(1 2 3):8" },
+
+  // ---- Memphis jug band: bouncy, melodic, mid-register ----
+  { id: "j-i-melody", slot: "I", styles: ["jug"], after: "noah-lewis", name: "Good-time melody", tab: "-2:2 -3:2 -4:2 5:2 -4:2 -3:2 -2:4",
+    tip: "Clean single notes with a sweet tone: jug-band harp sang the tune." },
+  { id: "j-i-bounce", slot: "I", styles: ["jug"], name: "Bounce", tab: "-4:1 5:1 -4:2 -3:2 -2:2 -3:1 -4:1 -3:2 -2:4" },
+  { id: "j-i-tumble", slot: "I", styles: ["jug"], name: "Triplet tumble", tab: "6:2/3 -5:2/3 5:2/3 -4:2/3 4:2/3 -3:2/3 -2:4 -3:2 -2:4 r:2" },
+  { id: "j-i-sweet", slot: "I", styles: ["jug"], name: "Sweet bend", tab: "-3↓:1 -3:1 -4:2 5:2 6:2 5:2 -4:2 -2:4" },
+  { id: "j-i-high", slot: "I", styles: ["jug"], name: "High jug", tab: "-6:2 6:1 -5:1 5:2 -4:2 -4↓:1 4:1 -3↓↓:2 -2:4" },
+  { id: "j-iv-bounce", slot: "IV", styles: ["jug"], name: "IV bounce", tab: "4:2 5:2 6:2 5:2 4:2 5:2 4:4" },
+  { id: "j-iv-sweet", slot: "IV", styles: ["jug"], name: "IV sweet", tab: "6:2 -5:2 5:2 4:2 -3↓:2 4:2 5:4" },
+  { id: "j-v-walk", slot: "V", styles: ["jug"], name: "V to IV", tab: "-4:2 -5:2 -6:2 -5:2 5:2 4:2 5:4" },
+  { id: "j-v-lean", slot: "V", styles: ["jug"], name: "V lean", tab: "-4:2 -4↓:2 4:4 -3:2 4:2 5:4" },
+  { id: "j-t-turn", slot: "T", styles: ["jug"], name: "Jug turnaround", tab: "-2:2 -3:2 -4:2 5:2 6:4 -4:4" },
+  { id: "j-t-bent", slot: "T", styles: ["jug"], name: "Bent turnaround", tab: "6:2 5:2 -4:2 -3↓:2 -3:4 -4:4" },
+  { id: "j-e-end", slot: "E", styles: ["jug"], name: "Jug ending", tab: "-4:2 -3:2 -2:4 -(2 3 4):8" },
+  { id: "j-e-sweet", slot: "E", styles: ["jug"], name: "Sweet ending", tab: "5:2 -4:2 -3↓:2 -3:2 -2:8" },
+
+  // ---- Chicago, after the amplified masters ----
+  { id: "c-lw-run", slot: "I", styles: [SH], after: "little-walter", name: "Jazzy triplet run", tab: "-2:2/3 -3↓:2/3 -3:2/3 -4:2/3 5:2/3 -5:2/3 6:2 -5:1 5:1 -4:2 -3↓:2 -2:2 r:2",
+    tip: "Little Walter phrased like a horn player: even triplets running up, then a swung fall." },
+  { id: "c-shake", slot: "I", styles: [SH, SL], name: "Shake and fall", tab: "-4/5:4 -4:2 -3↓:2 -2:2 -3:2 4:4" },
+  { id: "c-bw-octave", slot: "I", styles: [SH, SL], after: "big-walter", name: "Tongue-blocked octaves", tab: "-(1 _ _ 4):2 -(1 _ _ 4):1 -(1 _ _ 4):1 -(2 _ _ 5):4 -(1 _ _ 4):4 r:4",
+    tip: "Big Walter's big tone came from tongue blocking: block the middle holes and play the octave." },
+  { id: "c-sl-triplets", slot: "I", styles: [SL], name: "Slow triplet sigh", tab: "-4:2/3 -4↓:2/3 4:2/3 -3↓:2 -2:4 r:2 -3↓↓:2/3 -3↓:2/3 -3:2/3 -2:4" },
+  { id: "c-iv-shake", slot: "IV", styles: [SH, SL], name: "IV shake", tab: "5/6:4 5:2 4:2 -3↓:4 r:4" },
+
   // ===== 2nd position, minor blues (no major 3rd: ♭3 is -3↓; v chord is -(4 5 6)) =====
   { id: "m-i-pent", slot: "I", styles: ["minor"], name: "Minor pentatonic", tab: "-2:2 4:2 -4:2 -5:2 -4:2 4:2 -2:4" },
   { id: "m-i-high", slot: "I", styles: ["minor"], name: "Minor up top", tab: "6:2 -5:2 -4:2 -5:2 6:8" },
@@ -106,31 +212,51 @@ export const LICKS = [
   { id: "r-e-2", slot: "E", styles: ["reed"], name: "High chord ending", tab: "8↓:2 8:2 7:4 (7 8 9):8" },
 ];
 
-/** One lick token: { token, units, rest, glide }. */
-export function parseLick(tab) {
-  const re = /(~?-?\([^)]*\)|~?[^\s:]+):(\d+)/g;
-  const out = [];
-  let total = 0;
-  for (const [, raw, units] of tab.matchAll(re)) {
-    const glide = raw.startsWith("~");
-    const token = glide ? raw.slice(1) : raw;
-    out.push({ token, units: Number(units), rest: token === "r", glide });
-    total += Number(units);
-  }
-  return { tokens: out, units: total };
+/** A duration: whole eighths ("2"), fractions ("2/3" = a triplet eighth) or decimals ("0.5"). */
+export function parseUnits(text) {
+  const [a, b] = String(text).split("/");
+  const v = b === undefined ? Number(a) : Number(a) / Number(b);
+  return Number.isFinite(v) && v > 0 ? v : NaN;
 }
 
 /**
+ * One lick token: { token, units, rest, glide, shake? }.
+ * "-4/5:4" is a shake: draw 4 trilled with draw 5 (`token` "-4", `shake` "-5").
+ */
+export function parseLick(tab) {
+  const re = /(~?-?\([^)]*\)|~?[^\s:]+):(\d+(?:\.\d+)?(?:\/\d+)?)/g;
+  const out = [];
+  let total = 0;
+  for (const [, raw, dur] of tab.matchAll(re)) {
+    const glide = raw.startsWith("~");
+    let token = glide ? raw.slice(1) : raw;
+    let shake;
+    const sh = /^(-?)(\d{1,2}[↓]*)\/(\d{1,2})$/.exec(token);
+    if (sh) {
+      token = `${sh[1]}${sh[2]}`;
+      shake = `${sh[1]}${sh[3]}`;
+    }
+    const units = parseUnits(dur);
+    out.push({ token, units, rest: token === "r", glide, ...(shake && { shake }) });
+    total += units;
+  }
+  return { tokens: out, units: Math.round(total * 1e6) / 1e6 };
+}
+
+/** The token as written in tab: "-4/5" for a shake. */
+export const tabToken = (t) => (t.shake ? `${t.token}/${t.shake.replace(/^-/, "")}` : t.token);
+
+/**
  * Difficulty from the techniques a lick uses:
- * 1 natural notes and chords · 2 one-semitone bends · 3 deeper bends, slides, splits · 4 overbends.
+ * 1 natural notes and chords · 2 one-semitone bends, shakes · 3 deeper bends, slides, splits · 4 overbends.
  */
 export function lickLevel(tab) {
   let level = 1;
-  for (const { token, glide } of parseLick(tab).tokens) {
+  for (const { token, glide, shake } of parseLick(tab).tokens) {
     const bends = (token.match(/↓/g) ?? []).length;
     if (token.includes("↑")) level = Math.max(level, 4);
     else if (bends >= 2 || glide || token.includes("_")) level = Math.max(level, 3);
-    else if (bends === 1) level = Math.max(level, 2);
+    else if (bends === 1 || shake) level = Math.max(level, 2);
   }
   return level;
 }
@@ -140,28 +266,32 @@ export const LEVELS = { 1: "Beginner", 2: "Bends", 3: "Advanced", 4: "Overblows"
 export const SLOT_NAMES = { I: "I chord", IV: "IV chord", V: "V to IV", T: "Turnaround", E: "Ending" };
 
 /**
- * Check a lick someone typed in: every token must be playable, the rhythm must fit in two
- * bars (16 eighths); shorter licks are padded with rest. Durations default to 2 (a quarter).
- * "-2 -3↓ 4" is accepted as "-2:2 -3↓:2 4:2".
- * @returns {{ ok: true, tab: string, level: number } | { ok: false, error: string }}
+ * Check a lick someone typed in: every token must be playable and the rhythm must fit in
+ * `maxUnits` eighths (2 bars for a lick); shorter licks are padded with rest to whole bars.
+ * Durations default to `defaultUnits` (2 = a quarter): "-2 -3↓ 4" is "-2:2 -3↓:2 4:2".
+ * @returns {{ ok: true, tab: string, level: number, units: number } | { ok: false, error: string }}
  */
-export function validateLick(text, harp) {
+export function validateLick(text, harp, { maxUnits = 16, defaultUnits = 2, pad = true } = {}) {
   const raw = String(text).trim();
   if (!raw) return { ok: false, error: "Type some tab, e.g. -2 -3↓ 4 -4" };
-  // Give tokens without a duration a quarter note; keep chords together.
-  const tokens = raw.match(/~?-?\([^)]*\)(?::\d+)?|[^\s]+/g) ?? [];
-  const withDur = tokens.map((t) => (/:\d+$/.test(t) ? t : `${t}:2`));
+  // Give tokens without a duration the default; keep chords together.
+  const tokens = raw.match(/~?-?\([^)]*\)(?::[\d./]+)?|[^\s]+/g) ?? [];
+  const withDur = tokens.map((t) => (/:[\d./]+$/.test(t) ? t : `${t}:${defaultUnits}`));
   const { tokens: parsed, units } = parseLick(withDur.join(" "));
-  if (parsed.length !== withDur.length) return { ok: false, error: "Couldn't read the rhythm; write durations as token:eighths, e.g. -2:2" };
-  if (units > 16) return { ok: false, error: `That's ${units / 2} beats; a lick can be up to 2 bars (8 beats).` };
+  if (parsed.length !== withDur.length || parsed.some((t) => Number.isNaN(t.units)))
+    return { ok: false, error: "Couldn't read the rhythm; write durations as token:eighths, e.g. -2:2 or -4:2/3" };
+  if (units > maxUnits + 1e-6) return { ok: false, error: `That's ${units / 2} beats; this can be up to ${maxUnits / 2} beats.` };
   for (const t of parsed) {
     if (t.rest) continue;
     try {
       parseToken(t.token, harp);
+      if (t.shake) parseToken(t.shake, harp);
     } catch (err) {
       return { ok: false, error: err.message.replace(/ on the \S+ harp$/, " on a diatonic harp") };
     }
   }
-  const tab = units < 16 ? `${withDur.join(" ")} r:${16 - units}` : withDur.join(" ");
-  return { ok: true, tab, level: lickLevel(tab) };
+  const whole = Math.max(16, Math.ceil(units / 8 - 1e-6) * 8);
+  const fill = Math.round((Math.min(maxUnits, whole) - units) * 1e6) / 1e6;
+  const tab = pad && fill > 0 ? `${withDur.join(" ")} r:${fill}` : withDur.join(" ");
+  return { ok: true, tab, level: lickLevel(tab), units: pad ? units + Math.max(0, fill) : units };
 }

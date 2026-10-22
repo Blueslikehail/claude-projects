@@ -38,7 +38,7 @@ export function renderDrums(hits, out, sampleRate, { gain = 0.5 } = {}) {
   const noise = () => ((seed = (seed * 16807) % 2147483647) / 2147483647) * 2 - 1;
   for (const hit of hits) {
     const start = Math.round(hit.time * sampleRate);
-    const len = { kick: 0.35, snare: 0.2, rim: 0.05, hat: 0.06, crash: 1.6 }[hit.kind];
+    const len = { kick: 0.35, snare: 0.2, rim: 0.05, hat: 0.06, crash: 1.6, stomp: 0.18 }[hit.kind];
     const stop = Math.min(out.length, start + Math.round(len * sampleRate));
     let phase = 0;
     let prev = 0;
@@ -48,6 +48,10 @@ export function renderDrums(hits, out, sampleRate, { gain = 0.5 } = {}) {
       if (hit.kind === "kick") {
         phase += (2 * Math.PI * (50 + 70 * Math.exp(-t / 0.04))) / sampleRate;
         x = Math.sin(phase) * Math.exp(-t / 0.12);
+      } else if (hit.kind === "stomp") {
+        // A foot on a wooden floor: a low thud with a little knock.
+        phase += (2 * Math.PI * (70 + 40 * Math.exp(-t / 0.015))) / sampleRate;
+        x = (Math.sin(phase) * 0.8 + 0.2 * noise() * Math.exp(-t / 0.01)) * Math.exp(-t / 0.05) * 0.7;
       } else if (hit.kind === "rim") {
         phase += (2 * Math.PI * 1700) / sampleRate;
         x = (0.5 * noise() + 0.5 * Math.sin(phase)) * Math.exp(-t / 0.012) * 0.5;
@@ -66,6 +70,27 @@ export function renderDrums(hits, out, sampleRate, { gain = 0.5 } = {}) {
 }
 
 /**
+ * The notes to sound for tab events: a shake ("-4/5") becomes a fast alternation between
+ * its two notes in one breath (each slides quickly into the next, no new attack).
+ */
+export function playedNotes(events, { shakeRate = 14 } = {}) {
+  const out = [];
+  for (const e of events) {
+    if (!e.shake) {
+      out.push(e);
+      continue;
+    }
+    const n = Math.max(2, Math.round(e.duration * shakeRate));
+    for (let k = 0; k < n; k++) {
+      const { shake, ...piece } = { ...e, time: e.time + (k * e.duration) / n, duration: e.duration / n, pitches: k % 2 ? e.shake : e.pitches };
+      if (k > 0) Object.assign(piece, { glide: true, connected: true, glideTime: 0.025 });
+      out.push(piece);
+    }
+  }
+  return out;
+}
+
+/**
  * Render a lesson (from generateLesson) to mono samples.
  * @param {{ harp?: boolean, backing?: boolean, sampleRate?: number }} parts
  */
@@ -77,10 +102,12 @@ export function renderLesson(lesson, { harp = true, backing = true, sampleRate =
     renderVoices(lesson.backing.comp, out, sampleRate, { harmonics: [1, 0.4, 0.3, 0.15], attack: 0.01, decay: 0.25, gain: 0.07 });
     // Held chords (slow and minor styles): a soft organ-like pad.
     renderVoices(lesson.backing.pads ?? [], out, sampleRate, { harmonics: [1, 0.5, 0.25, 0.1], attack: 0.08, decay: 30, release: 0.15, gain: 0.035 });
+    // Acoustic guitar (country blues styles): bright, quickly decaying plucks.
+    renderVoices(lesson.backing.guitar ?? [], out, sampleRate, { harmonics: [1, 0.7, 0.5, 0.3, 0.2, 0.1], attack: 0.003, decay: 0.35, gain: 0.12 });
     renderDrums(lesson.backing.drums, out, sampleRate, { gain: 0.35 });
   }
   if (harp) {
-    const lead = renderNotes(lesson.events, { sampleRate, vibrato: 0.06, breath: 0.04, tail: 0 });
+    const lead = renderNotes(playedNotes(lesson.events), { sampleRate, vibrato: 0.06, breath: 0.04, tail: 0 });
     for (let s = 0; s < Math.min(length, lead.length); s++) out[s] += 0.75 * lead[s];
   }
   let peak = 0;

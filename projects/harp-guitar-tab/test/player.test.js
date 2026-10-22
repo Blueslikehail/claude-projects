@@ -82,3 +82,14 @@ test("barPhrases: two bars per line, labelled with their chords", async () => {
     [2, 4, "B7 A7", 3],
   ]);
 });
+
+test("applyTokenEdits keeps a shake written in a lesson", async () => {
+  const { createHarp } = await import("../src/core/harmonica.js");
+  const { mapToHarp, candidates } = await import("../src/core/harpMapper.js");
+  const harp = createHarp("C");
+  const notes = [{ id: 0, time: 0, duration: 1, pitches: [74], shake: [77] }];
+  const mapped = mapToHarp(notes, harp).events;
+  const [e] = applyTokenEdits(mapped, new Map([[0, "-4/5"]]), (x) => candidates(harp, x.pitches));
+  assert.equal(e.token, "-4/5");
+  assert.deepEqual(e.shake, [77]);
+});

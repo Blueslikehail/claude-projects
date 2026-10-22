@@ -64,7 +64,13 @@ test("helpers: tempo categories, lesson options, listen links", () => {
 
 test("validateLick: default rhythm, padding, errors", () => {
   const h = createHarp("C");
-  assert.deepEqual(validateLick("-2 -3↓ 4 -4", h), { ok: true, tab: "-2:2 -3↓:2 4:2 -4:2 r:8", level: 2 });
+  assert.deepEqual(validateLick("-2 -3↓ 4 -4", h), { ok: true, tab: "-2:2 -3↓:2 4:2 -4:2 r:8", level: 2, units: 16 });
+  // Triplets, sixteenths and shakes
+  const fancy = validateLick("-2:2/3 -3↓:2/3 -3:2/3 -4/5:4 4:1/2 -3↓:1/2 -2:1", h);
+  assert.deepEqual([fancy.ok, fancy.tab.endsWith("r:8"), fancy.level], [true, true, 2]);
+  // Long tabs (your own songs) pad to whole bars
+  const long = validateLick(Array(20).fill("-2").join(" "), h, { maxUnits: 960 });
+  assert.equal(long.units, 40); // 5 bars
   const chordy = validateLick("-2:1 -3↓:1 ~-3↓↓:2 -(1 2 3):4", h);
   assert.equal(chordy.ok, true);
   assert.equal(chordy.level, 3);

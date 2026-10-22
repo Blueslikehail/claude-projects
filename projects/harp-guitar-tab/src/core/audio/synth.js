@@ -8,7 +8,8 @@ export const HARMONICA_HARMONICS = [1, 0.6, 0.45, 0.25, 0.15, 0.08];
 
 /**
  * @param {{time:number, duration:number, pitches:number[], connected?:boolean, glide?:boolean}[]} notes
- *   connected: no new attack (legato); glide: slide from the previous pitch over `glideTime`.
+ *   connected: no new attack (legato); glide: slide from the previous pitch over `glideTime`
+ *   (a note's own `glideTime` wins).
  * @returns {Float32Array}
  */
 export function renderNotes(
@@ -48,8 +49,8 @@ export function renderNotes(
       amp[s] = Math.max(amp[s], a);
       note.pitches.forEach((p, v) => {
         const from = prev?.pitches[v] ?? p;
-        pitch[v][s] =
-          note.glide && joinsPrev && t < glideTime ? from + ((p - from) * t) / glideTime : p;
+        const g = note.glideTime ?? glideTime;
+        pitch[v][s] = note.glide && joinsPrev && t < g ? from + ((p - from) * t) / g : p;
       });
     }
   });

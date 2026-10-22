@@ -14,8 +14,10 @@ import { STYLES, beatTime } from "./styles.js";
 export const DEFAULT_MY_LICK_STYLES = ["shuffle", "slow", "boogie", "swamp"];
 
 // 12-bar form: chord degree per bar, and which lick slot covers each pair of bars.
-const FORM = ["I", "I", "I", "I", "IV", "IV", "I", "I", "V", "IV", "I", "V"];
-const SLOTS = ["I", "I", "IV", "I", "V", "T"];
+// Styles can change both (one-chord styles stay on I); the last slot of the last chorus
+// is always an ending.
+export const FORM = ["I", "I", "I", "I", "IV", "IV", "I", "I", "V", "IV", "I", "V"];
+export const SLOTS = ["I", "I", "IV", "I", "V", "T"];
 const DEGREE = { I: 0, IV: 5, V: 7 };
 
 /** Small seeded PRNG (mulberry32), so a seed always gives the same lesson. */
@@ -58,7 +60,8 @@ export function gridTime({ beats, startBeat = 0, swing = 2 / 3 }) {
  * Pick a lick for a slot: at or under the level, mostly at it, not the one just used.
  * Your own licks for the slot (any level) are used most of the time when there are some.
  */
-function pickLick(slot, level, style, random, recent, mine = []) {
+function pickLick(slot, level, style, random, recent, mine = [], pinned) {
+  if (pinned && pinned.slot === slot && random() < 0.75) return pinned;
   const own = mine.filter(
     (l) => l.slot === slot && (l.styles ?? DEFAULT_MY_LICK_STYLES).includes(style) && l.id !== recent.at(-1), // may come back, just not twice in a row
   );
@@ -78,8 +81,9 @@ function pickLick(slot, level, style, random, recent, mine = []) {
  *   myLicks: your own licks ({ id, name, slot, tab, song?, styles? }, see validateLick)
  *   grid: follow a recording instead of a steady tempo — { beats: seconds[], startBeat, swing }
  *         (beats from analyzeSong; startBeat = the beat where a 12-bar chorus starts).
+ *   lick: a lick (from LICKS or yours) to feature: used most times its slot comes up.
  */
-export function generateLesson({ songKey = "E", style = "shuffle", level = 2, tempo, choruses = 1, seed = 1, myLicks = [], grid } = {}) {
+export function generateLesson({ songKey = "E", style = "shuffle", level = 2, tempo, choruses = 1, seed = 1, myLicks = [], grid, lick: featured } = {}) {
   const def = STYLES[style];
   if (!def) throw new Error(`Unknown style: ${style}`);
   tempo ??= def.tempo.default;
@@ -92,54 +96,28 @@ export function generateLesson({ songKey = "E", style = "shuffle", level = 2, te
   const at = grid ? gridTime(grid) : (units) => eighthTime(units, tempo, swing);
 
   const events = [];
-  const chordTrack = [];
   const licks = [];
   const recent = [];
+  const slots = def.slots ?? SLOTS;
+  const chordTrack = chordTrackFor({ root, style, choruses, at });
 
   for (let c = 0; c < choruses; c++) {
     const last = c === choruses - 1;
-    // Chord track, one chord per bar (the last bar of the song resolves to I).
-    FORM.forEach((degree, b) => {
-      const bar = c * 12 + b;
-      const deg = last && b === 11 ? "I" : degree;
-      const chord = makeChord(root + DEGREE[deg], def.chord);
-      chordTrack.push({ bar, degree: deg, name: chord.name, root: chord.root, time: at(bar * barUnits), duration: at((bar + 1) * barUnits) - at(bar * barUnits) });
-    });
     // Licks, one per two bars.
-    SLOTS.forEach((slot, s) => {
-      const lick = pickLick(last && slot === "T" ? "E" : slot, level, style, random, recent, myLicks);
+    slots.forEach((slot, s) => {
+      const lick = pickLick(last && s === slots.length - 1 ? "E" : slot, level, style, random, recent, myLicks, featured);
       recent.push(lick.id);
       if (recent.length > 3) recent.shift();
       const startBar = c * 12 + s * 2;
       const mine = myLicks.includes(lick);
-      licks.push({ id: lick.id, name: lick.name, slot: lick.slot, bar: startBar, level: lickLevel(lick.tab), mine, song: lick.song });
-      let unit = startBar * barUnits;
-      const tokens = parseLick(lick.tab).tokens;
-      tokens.forEach((t, k) => {
-        const start = unit;
-        unit += t.units;
-        if (t.rest) return;
-        const { token, pitches } = parseToken(t.token, harp);
-        const nextGlides = tokens[k + 1]?.glide;
-        const span = at(unit) - at(start);
-        const [named] = pitches.length > 1 ? identifyChord(pitches) : [];
-        events.push({
-          time: at(start),
-          duration: nextGlides ? span : span * 0.9, // a little air between notes
-          pitches,
-          token,
-          glide: t.glide,
-          connected: t.glide,
-          chord: named && named.score >= 0.75 ? named.name : undefined,
-          lick: lick.id,
-        });
-      });
+      licks.push({ id: lick.id, name: lick.name, slot: lick.slot, bar: startBar, level: lickLevel(lick.tab), mine, song: lick.song, after: lick.after });
+      events.push(...lickEvents(lick.tab, harp, at, startBar * barUnits, lick.id));
     });
   }
 
   const bars = choruses * 12;
   const keyName = `${pitchClassName(root)}${def.minor ? " minor" : ""}`;
-  const positionName = def.position === 1 ? "1st position" : "2nd position";
+  const positionName = `${def.position === 1 ? "1st" : def.position === 3 ? "3rd" : "2nd"} position`;
   return {
     title: `${def.name} in ${keyName} · ${harpKey} harp, ${positionName}`,
     style,
@@ -160,6 +138,122 @@ export function generateLesson({ songKey = "E", style = "shuffle", level = 2, te
   };
 }
 
+/** The style's chords, one per bar, for `choruses` times its 12-bar form (the last bar resolves to I). */
+export function chordTrackFor({ root, style, choruses, at }) {
+  const def = STYLES[style];
+  const form = def.progression ?? FORM;
+  const track = [];
+  for (let c = 0; c < choruses; c++) {
+    form.forEach((degree, b) => {
+      const bar = c * 12 + b;
+      const deg = c === choruses - 1 && b === 11 ? "I" : degree;
+      const chord = makeChord(root + DEGREE[deg], def.chord);
+      track.push({ bar, degree: deg, name: chord.name, root: chord.root, time: at(bar * 8), duration: at((bar + 1) * 8) - at(bar * 8) });
+    });
+  }
+  return track;
+}
+
+/**
+ * Timed notes for a lick's tab starting at eighth `from`. A shake ("-4/5") is one event
+ * with `shake` pitches; slides ("~") are joined to the note before.
+ */
+export function lickEvents(tab, harp, at, from = 0, lickId) {
+  const events = [];
+  const tokens = parseLick(tab).tokens;
+  let unit = from;
+  tokens.forEach((t, k) => {
+    const start = unit;
+    unit += t.units;
+    if (t.rest) return;
+    const { token, pitches, shake } = parseToken(t.shake ? `${t.token}/${t.shake.replace(/^-/, "")}` : t.token, harp);
+    const nextGlides = tokens[k + 1]?.glide;
+    const span = at(unit) - at(start);
+    const [named] = pitches.length > 1 ? identifyChord(pitches) : [];
+    const event = {
+      time: at(start),
+      duration: nextGlides || t.shake ? span : span * 0.9, // a little air between notes
+      pitches,
+      token,
+      glide: t.glide,
+      connected: t.glide,
+      chord: named && named.score >= 0.75 ? named.name : undefined,
+    };
+    if (lickId !== undefined) event.lick = lickId;
+    if (shake) event.shake = shake;
+    events.push(event);
+  });
+  return events;
+}
+
+/**
+ * A lesson from a tab of yours (any length): the notes in a row from bar 1 over the
+ * style's backing, as many choruses as it takes. `tab` is lick format ("-2:2 -3↓:2 …").
+ */
+export function tabLesson({ tab, name = "My tab", songKey = "E", style = "shuffle", tempo } = {}) {
+  const def = STYLES[style];
+  if (!def) throw new Error(`Unknown style: ${style}`);
+  tempo ??= def.tempo.default;
+  const sw = def.swing;
+  const root = parsePitchClass(songKey);
+  const harpKey = harpForSong(songKey, def.position);
+  const harp = createHarp(harpKey);
+  const at = (units) => eighthTime(units, tempo, sw);
+  const { units } = parseLick(tab);
+  const choruses = Math.max(1, Math.ceil(units / 96 - 1e-6));
+  const chordTrack = chordTrackFor({ root, style, choruses, at });
+  const events = lickEvents(tab, harp, at, 0, "tab");
+  const bars = choruses * 12;
+  return {
+    title: `${name} · ${def.name} in ${pitchClassName(root)} · ${harpKey} harp`,
+    style, styleName: def.name, songKey: pitchClassName(root), harpKey, position: def.position, tempo, swing: sw, bars,
+    level: lickLevel(tab), seed: 0,
+    duration: at(bars * 8), events, chordTrack,
+    licks: [{ id: "tab", name, slot: "I", bar: 0, level: lickLevel(tab), mine: true }],
+    backing: backingParts(chordTrack, { tempo, style }),
+  };
+}
+
+/**
+ * Practise one lick: it repeats `repeats` times over the bars of the form it was written
+ * for (an IV lick over the IV chord, a turnaround over bars 11–12…), with the style's band.
+ */
+export function lickLesson({ lick, style, songKey = "E", tempo, repeats = 4 } = {}) {
+  style ??= lick.styles?.[0] ?? "shuffle";
+  const def = STYLES[style];
+  if (!def) throw new Error(`Unknown style: ${style}`);
+  tempo ??= def.tempo.default;
+  const root = parsePitchClass(songKey);
+  const harpKey = harpForSong(songKey, def.position);
+  const harp = createHarp(harpKey);
+  const at = (units) => eighthTime(units, tempo, def.swing);
+  const form = def.progression ?? FORM;
+  const slotIndex = (def.slots ?? SLOTS).indexOf(lick.slot);
+  const degrees = lick.slot === "E" || slotIndex < 0 ? ["I", "I"] : form.slice(slotIndex * 2, slotIndex * 2 + 2);
+  const chordTrack = [];
+  const events = [];
+  for (let r = 0; r < repeats; r++) {
+    degrees.forEach((deg, k) => {
+      const bar = r * 2 + k;
+      const chord = makeChord(root + DEGREE[deg], def.chord);
+      chordTrack.push({ bar, degree: deg, name: chord.name, root: chord.root, time: at(bar * 8), duration: at((bar + 1) * 8) - at(bar * 8) });
+    });
+    events.push(...lickEvents(lick.tab, harp, at, r * 16, lick.id));
+  }
+  // One more bar on I, where every slot of the form leads, so the lick can resolve.
+  const end = makeChord(root, def.chord);
+  chordTrack.push({ bar: repeats * 2, degree: "I", name: end.name, root: end.root, time: at(repeats * 16), duration: at(repeats * 16 + 8) - at(repeats * 16) });
+  const bars = repeats * 2 + 1;
+  const level = lickLevel(lick.tab);
+  return {
+    title: `${lick.name} · ${def.name} in ${pitchClassName(root)} · ${harpKey} harp`,
+    style, styleName: def.name, songKey: pitchClassName(root), harpKey, position: def.position, tempo, swing: def.swing, bars,
+    level, seed: 0, duration: at(bars * 8), events, chordTrack,
+    licks: Array.from({ length: repeats }, (_, r) => ({ id: lick.id, name: lick.name, slot: lick.slot, bar: r * 2, level, mine: Boolean(lick.mine), song: lick.song, after: lick.after })),
+    backing: backingParts(chordTrack, { tempo, style }),
+  };
+}
+
 /**
  * The band, from the chord track and the style's patterns: bass line, chord stabs or held
  * chords (pads), and drums. The final bar rings out.
@@ -171,30 +265,48 @@ export function backingParts(chordTrack, { tempo = 80, style = "shuffle" } = {})
   const comp = [];
   const pads = [];
   const drums = [];
+  const guitar = [];
   const shell = def.chord === "m7" ? [3, 10, 14] : [4, 10, 14]; // 3rd, 7th, 9th
   chordTrack.forEach((bar, i) => {
     const base = bar.bar * 4;
     const barEnd = beats(base + 4);
     const bassRoot = 28 + mod12(bar.root - 4); // E1..Eb2
     const voicing = shell.map((iv) => 52 + mod12(bar.root + iv - 4)).sort((a, b) => a - b); // around E3-Eb4
+    const thumbRoot = 40 + mod12(bar.root - 4); // guitar: E2..Eb3
+    const treble = (def.guitar?.treble.intervals ?? [7, 12, 16]).map((iv) => thumbRoot + iv + (def.chord === "m7" && mod12(iv) === 4 ? -1 : 0));
     if (i === chordTrack.length - 1) {
-      bass.push({ time: beats(base), duration: barEnd - beats(base), pitches: [bassRoot] });
-      pads.push({ time: beats(base), duration: barEnd - beats(base), pitches: voicing });
-      drums.push({ time: beats(base), kind: "kick" }, { time: beats(base), kind: "crash" });
+      const ring = { time: beats(base), duration: barEnd - beats(base) };
+      if (def.guitar) guitar.push({ ...ring, pitches: [thumbRoot, ...treble] });
+      if (def.bass) bass.push({ ...ring, pitches: [bassRoot] });
+      if (def.comp) pads.push({ ...ring, pitches: voicing });
+      if (def.drums?.kick?.length) drums.push({ time: beats(base), kind: "kick" }, { time: beats(base), kind: "crash" });
+      else if (def.drums?.stomp) drums.push({ time: beats(base), kind: "stomp" });
       return;
     }
-    const { at, intervals, length } = def.bass;
-    at.forEach((b, k) => {
-      const next = k + 1 < at.length ? base + at[k + 1] : base + 4;
-      bass.push({ time: beats(base + b), duration: (beats(next) - beats(base + b)) * length, pitches: [bassRoot + intervals[k]] });
-    });
-    if (def.comp.bars) pads.push({ time: beats(base), duration: barEnd - beats(base), pitches: voicing });
-    else for (const b of def.comp.at) comp.push({ time: beats(base + b), duration: def.comp.seconds, pitches: voicing });
-    def.drums.hat.forEach((b) => drums.push({ time: beats(base + b), kind: "hat", accent: Number.isInteger(b) }));
-    for (const b of def.drums.kick) drums.push({ time: beats(base + b), kind: "kick" });
-    for (const b of def.drums.snare) drums.push({ time: beats(base + b), kind: def.drums.rim ? "rim" : "snare" });
+    if (def.bass) {
+      const { at, intervals, length } = def.bass;
+      at.forEach((b, k) => {
+        const next = k + 1 < at.length ? base + at[k + 1] : base + 4;
+        bass.push({ time: beats(base + b), duration: (beats(next) - beats(base + b)) * length, pitches: [bassRoot + intervals[k]] });
+      });
+    }
+    if (def.guitar) {
+      const { thumb, treble: tr } = def.guitar;
+      thumb.at.forEach((b, k) => {
+        const next = k + 1 < thumb.at.length ? base + thumb.at[k + 1] : base + 4;
+        guitar.push({ time: beats(base + b), duration: (beats(next) - beats(base + b)) * thumb.length, pitches: [thumbRoot + thumb.intervals[k]] });
+      });
+      for (const b of tr.at) guitar.push({ time: beats(base + b), duration: tr.seconds, pitches: treble });
+    }
+    if (def.comp?.bars) pads.push({ time: beats(base), duration: barEnd - beats(base), pitches: voicing });
+    else if (def.comp) for (const b of def.comp.at) comp.push({ time: beats(base + b), duration: def.comp.seconds, pitches: voicing });
+    const kit = def.drums ?? {};
+    (kit.hat ?? []).forEach((b) => drums.push({ time: beats(base + b), kind: "hat", accent: Number.isInteger(b) }));
+    for (const b of kit.kick ?? []) drums.push({ time: beats(base + b), kind: "kick" });
+    for (const b of kit.snare ?? []) drums.push({ time: beats(base + b), kind: kit.rim ? "rim" : "snare" });
+    for (const b of kit.stomp ?? []) drums.push({ time: beats(base + b), kind: "stomp" });
   });
-  return { bass, comp, pads, drums };
+  return { bass, comp, pads, drums, guitar };
 }
 
 /** The tab of a lesson, one line per two bars, with the chords of those bars. */

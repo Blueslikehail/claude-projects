@@ -22,3 +22,5 @@ export * from "./songs.js";
 export * from "./lesson/styles.js";
 export * from "./audio/sampler.js";
 export * from "./audio/songAnalysis.js";
+export * from "./lesson/importTab.js";
+export * from "./players.js";

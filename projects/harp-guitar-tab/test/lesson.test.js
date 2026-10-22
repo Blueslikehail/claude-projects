@@ -1,3 +1,4 @@
+import { SLOTS } from "../src/core/lesson/generate.js";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { LICKS, lickLevel, parseLick } from "../src/core/lesson/licks.js";
@@ -131,7 +132,7 @@ import { STYLES, STYLE_IDS, beatTime } from "../src/core/lesson/styles.js";
 
 test("every style has a beginner lick and something at each level for every slot", () => {
   for (const style of STYLE_IDS) {
-    for (const slot of ["I", "IV", "V", "T", "E"]) {
+    for (const slot of new Set([...(STYLES[style].slots ?? SLOTS), "E"])) {
       const levels = LICKS.filter((l) => l.styles.includes(style) && l.slot === slot).map((l) => lickLevel(l.tab));
       assert.ok(levels.includes(1), `${style} ${slot} has no beginner lick`);
     }
@@ -211,4 +212,23 @@ test("a lesson can follow a recording's drifting beat grid", async () => {
     const bar = lesson.chordTrack.findLast((c) => c.time <= e.time + 1e-9);
     assert.ok(bar, "every note sits in a bar");
   }
+});
+
+test("lickLesson repeats a lick over the chords it was written for; tabLesson plays a long tab", async () => {
+  const { lickLesson, tabLesson } = await import("../src/core/lesson/generate.js");
+  const iv = LICKS.find((l) => l.id === "j-iv-bounce");
+  const lesson = lickLesson({ lick: iv, songKey: "G", repeats: 3 });
+  assert.equal(lesson.style, "jug");
+  assert.deepEqual(lesson.chordTrack.map((c) => c.name).slice(0, 6), ["C7", "C7", "C7", "C7", "C7", "C7"]);
+  assert.equal(lesson.events.length, 3 * 7);
+  assert.equal(lesson.bars, 7);
+  const shake = lickLesson({ lick: LICKS.find((l) => l.id === "d-i-shake"), songKey: "G" });
+  assert.deepEqual(shake.events[0].shake, [77], "draw 5 on a C harp (F5)");
+  assert.equal(shake.events[0].token, "-4/5");
+
+  const tab = tabLesson({ tab: Array(30).fill("-2:2").join(" "), style: "delta", songKey: "A" });
+  assert.equal(tab.bars, 12, "7.5 bars of notes fit one chorus");
+  assert.equal(tab.events.length, 30);
+  assert.equal(tab.harpKey, "D");
+  assert.ok(tab.backing.guitar.length && tab.backing.drums.every((d) => d.kind === "stomp"));
 });
