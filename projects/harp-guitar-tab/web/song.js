@@ -1,7 +1,7 @@
 // Play along with an original recording: analyse it (key, tempo, beats, bars, choruses),
 // then write licks that follow its beat grid. You hear the record, or the record with the
 // licks on top, and the mic scores you as usual. Corrections re-run the analysis.
-import { HARP_KEYS, LEVELS, STYLES, STYLE_IDS, article, encodeWav, generateLesson, harpForSong } from "./core/index.js";
+import { HARP_KEYS, LEVELS, STYLES, STYLE_IDS, article, encodeWav, generateLesson, harpForSong, tabLesson } from "./core/index.js";
 import { loadSamples, renderLessonSampled } from "./sampler.js";
 
 const $ = (id) => document.getElementById(id);
@@ -25,26 +25,38 @@ export function createSongs(app) {
   let recordingUrl = null;
   let fileName = "";
   let fixes = {};
+  let quiet = null; // set while loading a record for the tab importer: { resolve, reject }
   const opts = { style: "", level: 2, seed: newSeed() };
 
   function newSeed() {
     return Math.floor(Math.random() * 1e9);
   }
 
-  async function load(file) {
+  /**
+   * Load a record. Normally that makes licks for it; with `analyseOnly` it just finds the
+   * key and beat (for timing a tab) and resolves when done.
+   */
+  async function load(file, { analyseOnly = false } = {}) {
     if (recordingUrl) URL.revokeObjectURL(recordingUrl);
     recordingUrl = URL.createObjectURL(file);
     fileName = file.name.replace(/\.[^.]+$/, "");
     fixes = {};
     analysis = null;
-    app.showCards();
+    quiet?.reject(new Error("another record was loaded"));
+    const done = analyseOnly ? new Promise((resolve, reject) => (quiet = { resolve, reject })) : null;
+    if (!analyseOnly) {
+      quiet = null;
+      app.showCards();
+    }
     $("song-summary").textContent = "Listening to the band…";
     app.status(`Decoding <b>${esc(file.name)}</b>…`);
     try {
       audio = new Float32Array(await app.decodeToMono(await file.arrayBuffer()));
     } catch {
       app.status(`Could not decode <b>${esc(file.name)}</b>. Try an mp3, m4a, wav or mp4 file.`);
-      return;
+      quiet?.reject(new Error("could not decode the file"));
+      quiet = null;
+      return done;
     }
     worker?.terminate();
     worker = new Worker(new URL("./song-worker.js", import.meta.url), { type: "module" });
@@ -52,6 +64,7 @@ export function createSongs(app) {
     app.status(`Finding the key, beat and bars… <span class="progress"><i id="song-bar"></i></span>`);
     const copy = audio.slice();
     worker.postMessage({ samples: copy, sampleRate: RATE }, [copy.buffer]);
+    return done;
   }
 
   function reanalyze(change) {
@@ -68,10 +81,19 @@ export function createSongs(app) {
       if (bar) bar.style.width = `${Math.round(data.fraction * 100)}%`;
       return;
     }
-    if (data.type === "error") return app.status(`Analysis failed: ${esc(data.message)}`);
+    if (data.type === "error") {
+      quiet?.reject(new Error(data.message));
+      quiet = null;
+      return app.status(`Analysis failed: ${esc(data.message)}`);
+    }
     const keepTime = analysis !== null;
     analysis = data.analysis;
     renderSummary();
+    if (quiet) {
+      quiet.resolve(analysis);
+      quiet = null;
+      return;
+    }
     await makeLesson({ keepTime });
   }
 
@@ -132,6 +154,33 @@ export function createSongs(app) {
     });
   }
 
+  /**
+   * Show a tab timed to the record (from alignTab): the record, and the record with the tab
+   * played on top, with the tab scrolling in sync.
+   */
+  async function playTab(item, { startBeat }) {
+    const a = analysis;
+    const lesson = tabLesson({ tab: item.tab, name: item.name, style: item.style, songKey: item.songKey, tempo: Math.round(a.tempo), grid: { beats: a.beats, startBeat, swing: a.swing } });
+    lesson.title = `${item.name} · ${fileName} · ${lesson.harpKey} harp`;
+    app.status("Putting the tab on the record…");
+    let mixWav;
+    try {
+      const harp = await renderLessonSampled(lesson, await loadSamples(), { backing: false, sampleRate: RATE, duration: audio.length / RATE });
+      mixWav = encodeWav(mix(audio, harp), RATE);
+    } catch (err) {
+      console.warn("Couldn't render the tab:", err);
+      mixWav = encodeWav(audio, RATE);
+    }
+    $("song-card").hidden = $("lesson-card").hidden = $("lesson-extras").hidden = true;
+    app.loadLesson(lesson, recordingUrl, mixWav, {
+      labels: ["Recording", "Recording + tab"],
+      message: `<b>${esc(item.name)}</b> on the record from ${lesson.events[0]?.time.toFixed(1)} s. Switch to <b>Recording + tab</b> to check the timing; loop a line with ⟲.`,
+    });
+    const seek = () => (app.media.currentTime = Math.max(0, (lesson.events[0]?.time ?? 0) - 1));
+    if (app.media.readyState >= 1) seek();
+    else app.media.addEventListener("loadedmetadata", seek, { once: true });
+  }
+
   /** The record plus the licks, with the licks about as loud as the record. */
   function mix(record, licks) {
     const rms = (x) => Math.sqrt(x.reduce((s, v) => s + v * v, 0) / Math.max(1, x.length));
@@ -187,5 +236,10 @@ export function createSongs(app) {
     if (analysis) makeLesson({ keepTime: true });
   });
 
-  return { load };
+  return {
+    load,
+    playTab,
+    /** The loaded record, if any: { audio, sampleRate, analysis, fileName }. */
+    current: () => (audio && analysis ? { audio, sampleRate: RATE, analysis, fileName } : null),
+  };
 }

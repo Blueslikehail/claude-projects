@@ -24,3 +24,4 @@ export * from "./audio/sampler.js";
 export * from "./audio/songAnalysis.js";
 export * from "./lesson/importTab.js";
 export * from "./players.js";
+export * from "./audio/align.js";

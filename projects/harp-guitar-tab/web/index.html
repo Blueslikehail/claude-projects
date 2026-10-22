@@ -308,6 +308,24 @@
               <button id="imp-tap" class="button" title="Tap once per note (button or space bar), then once more at the end">Tap rhythm</button>
               <span id="imp-check" class="muted small"></span>
             </div>
+            <details id="imp-record" class="imp-record">
+              <summary>Find the rhythm in a record you own</summary>
+              <p class="muted small">Load the record the tab comes from (it stays in your browser) and say where the
+                part is. The app looks for these notes, in order, on the record's beat. It works best where the harp
+                is loud and clear; notes it couldn't hear well are listed — check the result by ear.</p>
+              <div class="lesson-controls">
+                <label class="button small">Load a record <input id="imp-rec-file" type="file" accept="audio/*,video/*" hidden /></label>
+                <span id="imp-rec-name" class="muted small"></span>
+              </div>
+              <div id="imp-rec-range" class="lesson-controls" hidden>
+                <label>From <input id="imp-from" type="number" min="0" step="0.1" value="0" /> s</label>
+                <label>to <input id="imp-to" type="number" min="0" step="0.1" /> s</label>
+                <button id="imp-use-loop" class="button small" title="Use the A–B loop you set while playing the record">Use my A–B loop</button>
+                <button id="imp-find" class="button primary">Find the rhythm</button>
+                <button id="imp-on-record" class="button" disabled>▶ Play it with the record</button>
+              </div>
+              <div id="imp-rec-out" class="small"></div>
+            </details>
             <div class="lesson-controls">
               <input id="imp-name" placeholder="Name, e.g. Juke chorus 1" />
               <input id="imp-source" placeholder="Where it's from (link or book, optional)" />

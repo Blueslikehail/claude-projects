@@ -10,9 +10,11 @@ import {
   STYLE_IDS,
   TAB_SITES,
   createHarp,
+  harpForSong,
   importTab,
   lickLevel,
   parseLick,
+  parseToken,
   playerById,
   tabToken,
   validateLick,
@@ -42,7 +44,8 @@ export function displayTab(tab) {
 
 /**
  * @param {{ lessons: ReturnType<import("./lesson.js").createLessons>, status: (html: string) => void,
- *           show: (view: "library" | "back") => void }} app
+ *           show: (view: "library" | "back") => void, songs: () => ReturnType<import("./song.js").createSongs>,
+ *           loop: () => ({ a: number, b: number } | null) }} app
  */
 export function createLibrary(app) {
   const filters = { style: "", player: "", level: "", slot: "", text: "", mine: false };
@@ -338,6 +341,111 @@ export function createLibrary(app) {
     },
     { capture: true },
   );
+
+  // ---------- find the rhythm in a record ----------
+
+  let aligned = null; // { startBeat } of the last alignment, for "Play it with the record"
+  let alignWorker = null;
+
+  function showRecord() {
+    const rec = app.songs().current();
+    $("imp-rec-range").hidden = !rec;
+    if (!rec) return;
+    const a = rec.analysis;
+    const harpKey = harpForSong(a.key, STYLES[$("imp-style").value].position);
+    $("imp-rec-name").innerHTML = `<b>${esc(rec.fileName)}</b> · ${esc(a.key)}${a.minor ? " minor" : ""} · ${Math.round(a.tempo)} bpm · ${esc(harpKey)} harp`;
+    if (!Number($("imp-to").value)) $("imp-to").value = (rec.audio.length / rec.sampleRate).toFixed(1);
+  }
+
+  $("imp-rec-file").addEventListener("change", async (ev) => {
+    const [file] = ev.target.files;
+    ev.target.value = "";
+    if (!file) return;
+    $("imp-rec-name").textContent = "Listening for the key and beat…";
+    $("imp-to").value = "";
+    try {
+      const a = await app.songs().load(file, { analyseOnly: true });
+      $("imp-key").value = a.key;
+      showRecord();
+      app.status(`Loaded <b>${esc(file.name)}</b>. Set where the part is (seconds), then <b>Find the rhythm</b>.`);
+    } catch (err) {
+      $("imp-rec-name").textContent = `Couldn't read it: ${err.message}`;
+    }
+  });
+  $("imp-record").addEventListener("toggle", showRecord);
+  $("imp-style").addEventListener("change", showRecord);
+  $("imp-use-loop").addEventListener("click", () => {
+    const loop = app.loop();
+    if (!loop) return app.status("Set a loop first: play the record, press A where the part starts and B where it ends.");
+    $("imp-from").value = loop.a.toFixed(1);
+    $("imp-to").value = loop.b.toFixed(1);
+  });
+
+  $("imp-find").addEventListener("click", () => {
+    const rec = app.songs().current();
+    const check = checkRhythm();
+    if (!rec || !check) return;
+    const a = rec.analysis;
+    const key = $("imp-key").value;
+    const harp = createHarp(harpForSong(key, STYLES[$("imp-style").value].position));
+    const notes = [];
+    for (const t of parseLick(check.tab).tokens) {
+      if (t.rest) continue;
+      const token = tabToken(t);
+      notes.push({ token, glide: t.glide, pitches: parseToken(token, harp).pitches });
+    }
+    const from = Math.max(0, Number($("imp-from").value) || 0);
+    const to = Math.min(rec.audio.length / rec.sampleRate, Number($("imp-to").value) || Infinity);
+    if (!(to - from > 0.5)) return app.status("Set where the part is: From must be before To.");
+    const slice = rec.audio.slice(Math.floor(from * rec.sampleRate), Math.ceil(to * rec.sampleRate));
+    alignWorker?.terminate();
+    alignWorker = new Worker(new URL("./align-worker.js", import.meta.url), { type: "module" });
+    $("imp-rec-out").innerHTML = `Looking for ${notes.length} notes… <span class="progress"><i id="imp-bar"></i></span>`;
+    $("imp-on-record").disabled = true;
+    alignWorker.onmessage = ({ data }) => {
+      if (data.type === "progress") {
+        const bar = $("imp-bar");
+        if (bar) bar.style.width = `${Math.round(data.fraction * 100)}%`;
+        return;
+      }
+      alignWorker.terminate();
+      alignWorker = null;
+      if (data.type === "error" || !data.result) {
+        $("imp-rec-out").textContent = data.message ?? "That stretch is too short for this many notes — widen From/To.";
+        return;
+      }
+      const r = data.result;
+      $("imp-lick").value = r.tab;
+      tapTempo = r.tempo || null;
+      aligned = { startBeat: r.startBeat };
+      checkRhythm();
+      const unsure = r.notes.map((n, i) => ({ ...n, i })).filter((n) => n.score <= 1);
+      $("imp-rec-out").innerHTML =
+        `Placed all ${r.notes.length} notes from ${(from + r.notes[0].time).toFixed(1)} s, about ${r.tempo} bpm. ` +
+        (unsure.length
+          ? `<span class="warn">${unsure.length} were hard to hear (the band may cover them): ${unsure
+              .slice(0, 8)
+              .map((n) => `#${n.i + 1} <code>${esc(n.token)}</code> at ${(from + n.time).toFixed(1)} s`)
+              .join(", ")}${unsure.length > 8 ? "…" : ""}.</span> `
+          : "All of them stood out clearly. ") +
+        `Check it with <b>▶ Play it with the record</b>.`;
+      $("imp-on-record").disabled = false;
+    };
+    // The worker gets only the stretch, so beat times shift by `from`.
+    alignWorker.postMessage(
+      { samples: slice, sampleRate: rec.sampleRate, notes, options: { beats: a.beats.map((b) => b - from), swing: a.swing, downbeat: a.downbeat } },
+      [slice.buffer],
+    );
+  });
+
+  $("imp-on-record").addEventListener("click", () => {
+    const item = currentItem();
+    if (item && aligned) app.songs().playTab(item, aligned);
+  });
+  $("imp-lick").addEventListener("input", () => {
+    aligned = null;
+    $("imp-on-record").disabled = true;
+  });
 
   // ---------- my tabs ----------
 

@@ -697,6 +697,8 @@ let libraryReturn = "empty";
 const library = createLibrary({
   lessons,
   status,
+  songs: () => songs,
+  loop: () => (state.lesson && !$("player").hidden ? state.loop : null),
   show(view) {
     if (view === "library") {
       if (!$("library").hidden) return;
@@ -713,7 +715,7 @@ const library = createLibrary({
 });
 $("open-library").addEventListener("click", () => library.open());
 
-createSongs({
+const songs = createSongs({
   loadLesson,
   status,
   decodeToMono,

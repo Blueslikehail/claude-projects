@@ -110,6 +110,12 @@ dependencies, so the same code will run in the web app:
   `-123` chords), lyrics and labels are skipped and reported. Set the rhythm by typing
   durations or by **tapping** it (one tap per note). Then practise it over any style's
   band, save it to **My tabs**, or save a short one as a lick for your lessons.
+- **Find the rhythm in a record:** in Import a tab, load the record the tab comes from
+  (or reuse the one from Play along), say where the part is (seconds, or your A–B loop)
+  and **Find the rhythm**: the app looks for the tab's notes in order on the record's
+  beat grid and writes their rhythm — triplets, sixteenths and rests included. It lists
+  notes it could hardly hear, and **▶ Play it with the record** shows the tab scrolling
+  in sync with the original, with the tab played on top to check by ear.
 - **Private:** your licks and tabs live only in your browser; **Export** writes one file
   (licks + tabs) you can import elsewhere. Nothing from tab sites ships with the app.
 
@@ -353,3 +359,17 @@ npm test
   states them (no source gave Sonny Terry's or DeFord Bailey's). Copying other sites' tabs
   into the app would republish them, so the app links to them and imports what you paste
   into your own browser instead. Most tab sites don't write rhythm, hence tap-to-time.
+- **Timing a tab to a record** (`src/core/audio/align.js`): knowing the notes and their
+  order turns transcription into alignment — each frame only has to say whether the next
+  note is sounding. Per frame, a harmonic salience for each tab pitch relative to all
+  pitches in the harp's range (so a loud band doesn't count as the note), plus an onset
+  measure from a 4× shorter window (repeated notes on one hole only show as a quick dip);
+  then a left-to-right Viterbi through note and gap states with a minimum note length,
+  and quantizing to the record's beats (swung off-beats preferred over sixteenths in a
+  shuffle; a triplet makes the next off-beat a triplet too). On synthesized band records
+  (7 styles × 3 lessons, harp level equal to and 9 dB under the band) 91% of notes landed
+  within 50 ms: 96–100% in shuffle and jug band, 78–85% in Delta and Piedmont, where the
+  guitar plays the same pitches as the harp's chords and octave splits. Raising the
+  onset weight further scored a little better on synthesized attacks but would trust soft
+  real-harp attacks too much. Real records will do worse — hence the list of
+  hard-to-hear notes and the play-back check.

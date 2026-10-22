@@ -50,8 +50,10 @@ export function gridTime({ beats, startBeat = 0, swing = 2 / 3 }) {
     return beats[last] + (i - last) * (beats[last] - beats[last - 1]); // extrapolate past the end
   };
   return (units) => {
-    const i = startBeat + Math.floor(units / 2);
-    const frac = units % 2 ? swing : 0;
+    const whole = Math.floor(units / 2 + 1e-9);
+    const i = startBeat + whole;
+    const within = units - whole * 2; // eighths into the beat: 1 is the (swung) off-beat
+    const frac = Math.abs(within - 1) < 1e-9 ? swing : within / 2;
     return beatAt(i) + frac * (beatAt(i + 1) - beatAt(i));
   };
 }
@@ -189,8 +191,9 @@ export function lickEvents(tab, harp, at, from = 0, lickId) {
 /**
  * A lesson from a tab of yours (any length): the notes in a row from bar 1 over the
  * style's backing, as many choruses as it takes. `tab` is lick format ("-2:2 -3↓:2 …").
+ * `grid` follows a recording's beats instead of a steady tempo (see generateLesson).
  */
-export function tabLesson({ tab, name = "My tab", songKey = "E", style = "shuffle", tempo } = {}) {
+export function tabLesson({ tab, name = "My tab", songKey = "E", style = "shuffle", tempo, grid } = {}) {
   const def = STYLES[style];
   if (!def) throw new Error(`Unknown style: ${style}`);
   tempo ??= def.tempo.default;
@@ -198,7 +201,7 @@ export function tabLesson({ tab, name = "My tab", songKey = "E", style = "shuffl
   const root = parsePitchClass(songKey);
   const harpKey = harpForSong(songKey, def.position);
   const harp = createHarp(harpKey);
-  const at = (units) => eighthTime(units, tempo, sw);
+  const at = grid ? gridTime(grid) : (units) => eighthTime(units, tempo, sw);
   const { units } = parseLick(tab);
   const choruses = Math.max(1, Math.ceil(units / 96 - 1e-6));
   const chordTrack = chordTrackFor({ root, style, choruses, at });
